@@ -1,0 +1,5 @@
+python manage.py runserver backend (djangocookieauth)
+
+npm run dev (frontend)
+
+contra123098
