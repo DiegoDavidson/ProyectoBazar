@@ -1,38 +1,27 @@
-import React from 'react';
-
-const buttonStyle = {
-  position: 'fixed',
-  bottom: '20px',
-  right: '20px',
-  zIndex: 1000
-};
+import React, { useEffect, useRef } from 'react';
+import Navbar from './Navbar'; // Importa el nuevo componente Navbar
 
 const VendedorDashboard = ({ logout }) => {
-    return (
-      <div style={{ backgroundColor: '#f0f0f0', minHeight: '100vh', padding: '20px' }}>
-        <div class="navbar bg-body-tertiary">
-          <div class="container-fluid">
-            <a class='navbar-brand'>Los monitos de la Nona</a>
-            <form class='d-flex' role='search'>
-              <input class='form-control me-2' type='search' placeholder='Ingresar artículo' aria-label='Search'></input>
-              <button class='btn btn-outline-success' type='submit'>Buscar</button>
-            </form>
-          </div>
-        </div>
+  const inputRef = useRef(null);
 
-        <button type="button" style={buttonStyle} className="btn btn-success btn-lg">
-          Pagar
-        </button>
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.setProperty('--placeholder-color', 'white');
+    }
+  }, []);
 
-        <div>
-          <button 
-            className="btn btn-danger" 
-            onClick={logout}>
-            LOG OUT
-          </button>
-        </div>
-        </div>
-      );
-    };
+  return (
+    <div>
+      {/* Usa el componente Navbar y pasa la función de logout */}
+      <Navbar onLogout={logout} />
+      
+      <div className="container mt-5 pt-5">
+        {/* Contenido principal del dashboard aquí */}
+        <h1>Bienvenido al Dashboard del Vendedor</h1>
+        {/* Otros elementos o componentes del dashboard */}
+      </div>
+    </div>
+  );
+};
 
 export default VendedorDashboard;

@@ -3,10 +3,13 @@ import Cookies from 'universal-cookie';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import VendedorDashboard from './VendedorDashboard';
 import GerenteDashboard from './GerenteDashboard';
-import 'bootstrap/dist/css/bootstrap.min.css'
-import userIcon from './Components/assets/user_icon.png'
-import passwordIcon from './Components/assets/password_icon.png'
-
+import Perfil from './Perfil';
+import Ventas from './Ventas';
+import Estadisticas from './Estadisticas';  // Importa la vista de Estadísticas
+import 'bootstrap/dist/css/bootstrap.min.css';
+import userIcon from './Components/assets/user_icon.png';
+import passwordIcon from './Components/assets/password_icon.png';
+import monitosNonaImage from './Components/assets/MonitosNonaWhite.png';
 
 const cookies = new Cookies();
 
@@ -46,7 +49,6 @@ class App extends React.Component {
   login = (event) => {
     event.preventDefault();
 
-    // Validación de campos vacíos
     if (this.state.username === "" || this.state.password === "") {
       this.setState({ error: "Por favor ingrese ambos campos" });
       return;
@@ -91,39 +93,22 @@ class App extends React.Component {
     });
   }
 
-  handlePasswordChange = (event) => {
-    this.setState({ password: event.target.value });
-  }
-
-  handleUserNameChange = (event) => {
-    this.setState({ username: event.target.value });
-  }
-
   render() {
     if (!this.state.isAuthenticated) {
       return (
-        
-        
-
-
-        <div className='container-fluid d-flex justify-content-center align-items-center vh-100' style={{ margin: 0, padding: 0, background: 'linear-gradient(#2A00B7, #42006C)' }}>
-          <div className='p-5 rounded' style={{ width: '40%', background: 'rgba(255, 255, 255, 0.8)' }}>
+        <div className='container-fluid d-flex justify-content-center align-items-center vh-100' style={{ margin: 0, padding: 0, background: '#212121' }}>
+          <div className='p-5 rounded' style={{ width: '40%', background: '#303030' }}>
             <form onSubmit={this.login}>
-              
               <div className='form-group mb-4'>
-
-                <h3 className='mb-5'>
-                  Los monitos de la Nona
+                <h3 className="text-center mb-5">
+                  <img src={monitosNonaImage} alt="Los Monitos de la Nona" style={{ width: '200px', height: '200px' }} />
                 </h3>
-
                 <div className="input-group">
-
                   <div className="input-group-prepend">
                     <span className="input-group-text" style={{ backgroundColor: 'transparent', border: 'none' }}>
                       <img src={userIcon} alt="User Icon" style={{ width: '30px', height: '30px' }} />
                     </span>
                   </div>
-
                   <input
                     type='text'
                     className='form-control'
@@ -131,61 +116,80 @@ class App extends React.Component {
                     name='username'
                     placeholder='Ingrese su nombre de usuario'
                     value={this.state.username}
-                    onChange={this.handleUserNameChange}
-                    style={{height: '50px', borderRadius: '25px', paddingLeft: '40px' }}
+                    onChange={(e) => this.setState({ username: e.target.value })}
+                    style={{
+                      height: '50px',
+                      borderRadius: '25px',
+                      paddingLeft: '40px',
+                      backgroundColor: '#2F2F2F',
+                      color: 'white',
+                    }}
                   />
-
                 </div>
               </div>
 
-            <div className='form-group mb-4'>
-
-              <div className='input-group'>
-
-                <div className="input-group-prepend">
-                  <span className="input-group-text" style={{ backgroundColor: 'transparent', border: 'none' }}>
-                    <img src={passwordIcon} alt="Password Icon" style={{ width: '30px', height: '30px' }} />
-                  </span>
+              <div className='form-group mb-4'>
+                <div className='input-group'>
+                  <div className="input-group-prepend">
+                    <span className="input-group-text" style={{ backgroundColor: 'transparent', border: 'none' }}>
+                      <img src={passwordIcon} alt="Password Icon" style={{ width: '30px', height: '30px' }} />
+                    </span>
+                  </div>
+                  <input
+                    type='password'
+                    className='form-control'
+                    id='password'
+                    name='password'
+                    placeholder='Contraseña'
+                    value={this.state.password}
+                    onChange={(e) => this.setState({ password: e.target.value })}
+                    style={{
+                      height: '50px',
+                      borderRadius: '25px',
+                      paddingLeft: '40px',
+                      backgroundColor: '#2F2F2F',
+                      color: 'white',
+                    }}
+                  />
                 </div>
-
-                <input
-                type='password'
-                className='form-control'
-                id='password'
-                name='password'
-                placeholder='Contraseña'
-                value={this.state.password}
-                onChange={this.handlePasswordChange}
-                style={{ height: '50px', borderRadius: '25px', paddingLeft: '40px' }}
-                />
+                <div>{this.state.error && <small className="text-danger">{this.state.error}</small>}</div>
               </div>
-              <div>{this.state.error && <small className="text-danger">{this.state.error}</small>}</div>
-            </div>
-            <button type="submit" className="btn w-100" style={{backgroundColor: '#42006C', color: 'white', borderRadius: '25px' }}>Ingresar</button>
+              
+              <button 
+                type="submit" 
+                className="btn w-100" 
+                style={{
+                  backgroundColor: '#676767',
+                  color: 'white',
+                  borderRadius: '25px'
+                }}
+              >
+                Ingresar
+              </button>
             </form>
           </div>
-
-
         </div>
-
-
-
-
-      
       );
     }
 
     return (
       <Router>
         <Routes>
-          {this.state.role === 'vendedor' ? (
-            <Route path="*" element={<VendedorDashboard logout={this.logout} />} />
-          ) : this.state.role === 'gerente' ? (
-            <Route path="*" element={<GerenteDashboard logout={this.logout} />} />
-          ) : (
-            <Route path="/" element={<Navigate to="/login" />} />
-          )}
-        </Routes>
+        {this.state.role === 'vendedor' ? (
+          <>
+            <Route path="/vendedor-dashboard" element={<VendedorDashboard logout={this.logout} />} />
+            <Route path="/perfil" element={<Perfil />} />
+            <Route path="/ventas" element={<Ventas logout={this.logout} />} />
+            <Route path="/estadisticas" element={<Estadisticas logout={this.logout} />} /> {/* Nueva ruta para Estadísticas */}
+            <Route path="*" element={<Navigate to="/vendedor-dashboard" />} />
+          </>
+        ) : this.state.role === 'gerente' ? (
+          <Route path="*" element={<GerenteDashboard logout={this.logout} />} />
+        ) : (
+          <Route path="/" element={<Navigate to="/login" />} />
+        )}
+      </Routes>
+
       </Router>
     );
   }
