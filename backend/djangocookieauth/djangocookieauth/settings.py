@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-i0*v(d9t6i%!c36a7ek567grbgs=t*x(!xcd$@+u$e-e5tsni^
 DEBUG = True
 
 ALLOWED_HOSTS = []
+DEBUG = True
 
 
 # Application definition
@@ -37,10 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api.apps.ApiConfig'
+    'api.apps.ApiConfig',
+    'corsheaders',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -49,6 +53,26 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Agrega el puerto del frontend
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'OPTIONS'
+]
+
+LOGIN_URL = '/login/'
+
+
+
 
 ROOT_URLCONF = 'djangocookieauth.urls'
 
@@ -116,7 +140,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
