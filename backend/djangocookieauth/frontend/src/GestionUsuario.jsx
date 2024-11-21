@@ -29,10 +29,33 @@ const GestionUsuario = () => {
   };
 
   return (
-    <div style={{ backgroundColor: '#0F1E25', minHeight: '100vh', padding: '10px', position: 'relative' }}>
+    <div
+      style={{
+        backgroundColor: '#0F1E25',
+        minHeight: '100vh',
+        paddingLeft: '250px', // Para que no se superponga con la navbar lateral
+        display: 'flex',
+        justifyContent: 'center', // Centrado horizontal
+        alignItems: 'center', // Centrado vertical
+        position: 'relative',
+      }}
+    >
       <Navbar /> {/* Usar el Navbar aquí */}
 
-      <div className="container" style={{ color: 'white', maxWidth: '70%', margin: 'auto', padding: '20px' }}>
+      <div
+        className="container"
+        style={{
+          color: 'white',
+          maxWidth: '900px',
+          minWidth: '400px', // Se puede cambiar para asegurar que sea resizable
+          resize: 'both',
+          overflow: 'auto',
+          padding: '20px',
+          backgroundColor: '#13242C',
+          position: 'relative',
+          borderRadius: '15px',
+        }}
+      >
         <h1 className="my-5 text-center">Gestión de Usuarios</h1>
 
         {/* Formulario para agregar nuevo usuario */}
@@ -47,10 +70,10 @@ const GestionUsuario = () => {
             style={{
               padding: '10px',
               marginRight: '10px',
-              borderRadius: '8px',
+              borderRadius: '10px',
               border: '1px solid #13242C',
-              backgroundColor: '#13242C',
-              color: 'white',
+              backgroundColor: 'white',
+              color: '#13242C',
               outline: 'none',
             }}
           />
@@ -65,8 +88,8 @@ const GestionUsuario = () => {
               marginRight: '10px',
               borderRadius: '8px',
               border: '1px solid #13242C',
-              backgroundColor: '#13242C',
-              color: 'white',
+              backgroundColor: 'white',
+              color: '#13242C',
               outline: 'none',
             }}
           />
@@ -81,8 +104,8 @@ const GestionUsuario = () => {
               marginRight: '10px',
               borderRadius: '8px',
               border: '1px solid #13242C',
-              backgroundColor: '#13242C',
-              color: 'white',
+              backgroundColor: 'white',
+              color: '#13242C',
               outline: 'none',
             }}
           />
@@ -90,6 +113,7 @@ const GestionUsuario = () => {
             onClick={handleAddUser}
             style={{
               padding: '10px 20px',
+              margin: '8px 0px',
               backgroundColor: '#1D3642',
               border: 'none',
               color: 'white',

@@ -24,7 +24,6 @@ const VendedorDashboard = ({ logout }) => {
 
   return (
     <div style={{ backgroundColor: '#0F1E25', minHeight: '100vh', padding: '10px', position: 'relative' }}>
-
       {/* Imagen para el menú */}
       <img 
         src={BazarImage} 

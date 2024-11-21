@@ -1,71 +1,210 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import DataTable from 'react-data-table-component';
+import './App.css'; 
 import Navbar from './Navbar';
 
+const CustomPagination = ({ rowsPerPage, rowCount, onChangePage, currentPage }) => {
+  const totalPages = Math.ceil(rowCount / rowsPerPage);
+
+  const handleBack = () => {
+    if (currentPage > 1) onChangePage(currentPage - 1);
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) onChangePage(currentPage + 1);
+  };
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#1D3642',
+        padding: '10px',
+        borderRadius: '5px',
+      }}
+    >
+      <button
+        style={{
+          backgroundColor: 'transparent',
+          color: '#FFFFFF',
+          fontSize: '18px',
+          margin: '0 10px',
+          cursor: 'pointer',
+          border: 'none',
+        }}
+        onClick={handleBack}
+        disabled={currentPage === 1}
+      >
+        &lt;
+      </button>
+      <span style={{ color: '#FFFFFF', fontSize: '14px', margin: '0 10px' }}>
+        {currentPage} de {totalPages}
+      </span>
+      <button
+        style={{
+          backgroundColor: 'transparent',
+          color: '#FFFFFF',
+          fontSize: '18px',
+          margin: '0 10px',
+          cursor: 'pointer',
+          border: 'none',
+        }}
+        onClick={handleNext}
+        disabled={currentPage === totalPages}
+      >
+        &gt;
+      </button>
+    </div>
+  );
+};
+
 const VentasDiarias = () => {
-    const [sales, setSales] = useState([]);
-    const [message, setMessage] = useState('');
+  const [sales, setSales] = useState([]);
+  const [message, setMessage] = useState('');
+  const [filterType, setFilterType] = useState(''); // Estado para controlar el tipo de filtro seleccionado
 
-    useEffect(() => {
-        fetchSales();
-    }, []);
+  useEffect(() => {
+    fetchSales();
+  }, []);
 
-    const fetchSales = async () => {
-        try {
-            const res = await fetch('http://localhost:8000/api/obtener_ventas/', { credentials: 'include' });
-            if (!res.ok) {
-                throw new Error('Error al obtener las ventas');
-            }
-            const data = await res.json();
-            const ventasFormateadas = data.ventas.map((venta) => ({
-                ...venta,
-                total: parseFloat(venta.total).toFixed(2),
-                fecha_venta: new Date(venta.fecha_venta).toLocaleString('es-ES') // Formatear la fecha y hora
-            }));
-            setSales(ventasFormateadas);
-        } catch (err) {
-            console.error('Error al obtener las ventas:', err);
-            setMessage('Error al obtener las ventas');
-        }
-    };
+  const fetchSales = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/obtener_ventas/', { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error('Error al obtener las ventas');
+      }
+      const data = await res.json();
+      const ventasFormateadas = data.ventas.map((venta) => ({
+        ...venta,
+        total: parseFloat(venta.total).toFixed(2),
+        fecha_venta: new Date(venta.fecha_venta).toLocaleString('es-ES') // Formatear la fecha y hora
+      }));
+      setSales(ventasFormateadas);
+    } catch (err) {
+      console.error('Error al obtener las ventas:', err);
+      setMessage('Error al obtener las ventas');
+    }
+  };
 
-    return (
-        <div style={{ backgroundColor: '#0F1E25', minHeight: '100vh', padding: '10px', position: 'relative' }}>
-            <Navbar />
-            <div className="container" style={{ color: 'white', maxWidth: '70%', margin: 'auto', padding: '20px' }}>
-                <h1 className="my-5 text-center">Ventas del Día</h1>
-                {message && <div className="alert alert-info mt-3">{message}</div>}
-                {sales.length === 0 && !message && (
-                    <div style={{ color: 'white', textAlign: 'center', marginTop: '20px' }}>
-                        <i>No hay ventas registradas para hoy.</i>
-                    </div>
-                )}
-                <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #1D3642' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ backgroundColor: '#1D3642' }}>
-                                <th style={{ padding: '12px', color: 'white' }}>ID</th>
-                                <th style={{ padding: '12px', color: 'white' }}>Vendedor</th>
-                                <th style={{ padding: '12px', color: 'white' }}>Total</th>
-                                <th style={{ padding: '12px', color: 'white' }}>Tipo de Documento</th>
-                                <th style={{ padding: '12px', color: 'white' }}>Fecha y Hora</th> {/* Nueva columna */}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {sales.map((sale) => (
-                                <tr key={sale.id} style={{ backgroundColor: '#13242C', color: 'white' }}>
-                                    <td style={{ padding: '10px', color: 'white' }}>{sale.id}</td>
-                                    <td style={{ padding: '10px', color: 'white' }}>{sale.vendedor__username || "Sin nombre"}</td>
-                                    <td style={{ padding: '10px', color: 'white' }}>${sale.total}</td>
-                                    <td style={{ padding: '10px', color: 'white' }}>{sale.tipo_documento}</td>
-                                    <td style={{ padding: '10px', color: 'white' }}>{sale.fecha_venta}</td> {/* Mostrar fecha y hora */}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  const columns = [
+    { name: 'ID', selector: (row) => row.id },
+    { name: 'Vendedor', selector: (row) => row.vendedor__username || "Sin nombre" },
+    { name: 'Total', selector: (row) => `$${row.total}`},
+    { name: 'Tipo de Documento', selector: (row) => row.tipo_documento },
+    { name: 'Fecha y Hora', selector: (row) => row.fecha_venta, sortable: true }
+  ];
+
+  const customStyles = {
+    headCells: {
+      style: {
+        backgroundColor: '#1D3642',
+        color: '#FFFFFF',
+        fontWeight: 'normal',
+        fontSize: '14px',
+      },
+    },
+    cells: {
+      style: {
+        backgroundColor: '#13242C',
+        color: '#FFFFFF',
+        fontWeight: 'normal',
+        fontSize: '14px',
+        borderWidth: 0,
+      },
+    },
+    rows: {
+      style: {
+        borderColor: '#13242C',
+        borderWidth: 0,
+      },
+    },
+    pagination: {
+      style: {
+        backgroundColor: '#1D3642',
+        color: '#FFFFFF',
+        fontSize: '14px',
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+    },
+  };
+
+  const handleFilterChange = (event) => {
+    setFilterType(event.target.value); // Cambiar el tipo de filtro seleccionado
+  };
+
+  // Filtrar las ventas según el filtro seleccionado
+  const filteredSales = filterType ? sales.filter(sale => sale.tipo_documento === filterType) : sales;
+
+  return (
+    <div className="d-flex">
+      <div
+        style={{
+          width: '250px',
+          height: '100vh',
+          backgroundColor: '#13242C',
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          padding: '20px',
+          color: 'white',
+        }}
+      >
+        <Navbar />
+      </div>
+      <div
+        style={{
+          marginLeft: '250px',
+          width: 'calc(100% - 250px)',
+          padding: '20px',
+          backgroundColor: '#0F1E25',
+          minHeight: '100vh',
+        }}
+      >
+        <div className="container-fluid">
+          <h2 className="mb-4 mt-5 text-light">Ventas del Día</h2>
+
+          {message && <div className="alert alert-info mt-3">{message}</div>}
+
+          {/* Filtro permanente */}
+          <div style={{ marginBottom: '20px', backgroundColor: '#13242C', padding: '10px', borderRadius: '5px' }}>
+            <label style={{ color: '#FFFFFF', marginRight: '10px' }}>Tipo de Documento:</label>
+            <select 
+              value={filterType} 
+              onChange={handleFilterChange}
+              style={{
+                padding: '5px',
+                backgroundColor: '#1D3642',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '5px',
+              }}
+            >
+              <option value="">Todos</option>
+              <option value="Boleta">Boleta</option>
+              <option value="Factura">Factura</option>
+            </select>
+          </div>
+
+          <DataTable
+            columns={columns}
+            data={filteredSales} // Mostrar solo las ventas filtradas
+            pagination
+            paginationPerPage={6}
+            fixedHeader
+            customStyles={customStyles}
+            paginationComponent={(paginationProps) => <CustomPagination {...paginationProps} />} // Pasa correctamente las props a CustomPagination
+            responsive
+            striped
+            />
+
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default VentasDiarias;
