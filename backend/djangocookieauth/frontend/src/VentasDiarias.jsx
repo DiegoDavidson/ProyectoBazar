@@ -61,8 +61,8 @@ const CustomPagination = ({ rowsPerPage, rowCount, onChangePage, currentPage }) 
   );
 };
 
-const VentasDiarias = () => {
-  const [sales, setSales] = useState([]);
+const VentasDiarias = ({ventas}) => {
+  const [sales, setSales] = useState(ventas || []);
   const [message, setMessage] = useState('');
   const [filterType, setFilterType] = useState(''); // Estado para controlar el tipo de filtro seleccionado
 
@@ -92,7 +92,7 @@ const VentasDiarias = () => {
   const columns = [
     { name: 'ID', selector: (row) => row.id },
     { name: 'Vendedor', selector: (row) => row.vendedor__username || "Sin nombre" },
-    { name: 'Total', selector: (row) => `$${row.total}`},
+    { name: 'Total', selector: (row) => `$${row.total}` },
     { name: 'Tipo de Documento', selector: (row) => row.tipo_documento },
     { name: 'Fecha y Hora', selector: (row) => row.fecha_venta, sortable: true }
   ];

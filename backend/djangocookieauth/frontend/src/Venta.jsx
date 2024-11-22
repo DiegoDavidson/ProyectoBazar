@@ -3,13 +3,20 @@ import { useNavigate } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import monitoIcon from "./Components/assets/Monito.png";
 import "./App.css";
+import BoletaPDF from './BoletaPDF'; // Asegúrate de que la ruta sea correcta
+import FacturaPDF from './FacturaPDF';
+
+
+
 
 const Venta = ({ logout }) => {
   const [productos, setProductos] = useState([]);
   const [carrito, setCarrito] = useState([]);
   const [total, setTotal] = useState(0);
   const [searchText, setSearchText] = useState("");
-  const [menuVisible, setMenuVisible] = useState(false); // Estado para controlar la visibilidad del menú
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [tipoDocumento, setTipoDocumento] = useState(""); // Estado para el tipo de documento
+  const [dialogVisible, setDialogVisible] = useState(false); // Estado para mostrar el cuadro de diálogo
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,13 +35,11 @@ const Venta = ({ logout }) => {
       .catch((err) => console.error("Error al obtener productos:", err));
   }, []);
 
-  const toggleMenu = () => {
-    setMenuVisible(!menuVisible); // Alternar visibilidad del menú
-  };
+  const toggleMenu = () => setMenuVisible(!menuVisible);
 
   const handleLogout = () => {
-    logout(); // Lógica de logout
-    navigate("/login"); // Redirigir al usuario a la página de login tras cerrar sesión
+    logout();
+    navigate("/login");
   };
 
   const agregarAlCarrito = (producto) => {
@@ -79,19 +84,26 @@ const Venta = ({ logout }) => {
     );
   };
 
+  const nuevaVenta = () => {
+    setCarrito([]);         
+    setTotal(0);            
+    setTipoDocumento("");   
+    setSearchText("");      
+    setDialogVisible(false); 
+  };
+
+
   const columnas = [
     { name: "Nombre", selector: (row) => row.nombre, sortable: true },
-    { name: "Cantidad", selector: (row) => row.cantidad, sortable: true },
-    { name: "Valor Unitario", selector: (row) => `$${row.valor_unitario}`, sortable: true },
+    { name: "Código", selector: (row) => row.id },
+    { name: "Valor Unitario", selector: (row) => `$${row.valor_unitario}`},
     {
       name: "Cantidad",
       cell: (row) => (
         <input
           type="number"
-          min="1"
-          max={row.cantidad}
           value={row.cantidadSeleccionada}
-          onChange={(e) => actualizarCantidad(row.id, parseInt(e.target.value) || 1)}
+          onChange={(e) => actualizarCantidad(row.id, parseInt(e.target.value) || 1)} // Si no es un número válido, se pone 1
           style={{
             width: "60px",
             padding: "5px",
@@ -144,18 +156,79 @@ const Venta = ({ logout }) => {
     },
     pagination: {
       style: {
-        backgroundColor: "#1D3642",
-        color: "#FFFFFF",
+        backgroundColor: '#1D3642',
+        color: '#FFFFFF',
+        fontSize: '14px',
+        justifyContent: 'center',
+        alignItems: 'center',
       },
     },
   };
 
-  const calcularIVA = (total) => {
-    return total * 0.19; // Calcula el 19% de IVA
+  const [facturaData, setFacturaData] = useState({
+    razonSocial: "",
+    rut: "",
+    giro: "",
+    direccion: "",
+  });
+  
+
+  const calcularIVA = (total) => total * 0.19;
+
+  const iva = calcularIVA(total);
+  const totalConIva = total + iva;
+
+  const finalizarCompra = () => {
+    setDialogVisible(true); // Mostrar cuadro de diálogo para seleccionar documento
   };
 
-  const iva = calcularIVA(total); // Calcula el IVA
-  const totalConIva = total + iva; // Suma el IVA al total
+  const guardarVenta = (venta) => {
+    // Aquí puedes enviar los datos de la venta al backend, o actualizar el estado
+    // Este es un ejemplo simple donde simplemente agregamos la venta a un array de ventas
+    setVentas(prevVentas => [...prevVentas, venta]);
+  };
+
+  const confirmarDocumento = () => {
+    if (!tipoDocumento) {
+      alert("Por favor, selecciona un tipo de documento.");
+      return;
+    }
+  
+    if (tipoDocumento === "factura") {
+      if (
+        !facturaData.razonSocial.trim() ||
+        !facturaData.rut.trim() ||
+        !facturaData.giro.trim() ||
+        !facturaData.direccion.trim()
+      ) {
+        alert("Por favor, completa todos los campos para la factura.");
+        return;
+      }
+  
+      const facturaNumero = Date.now(); // Generar un número único
+      FacturaPDF(carrito, total, facturaNumero, facturaData).generarPDF();
+    }
+  
+    if (tipoDocumento === "boleta") {
+      const boletaNumero = Date.now(); // Generar un número único
+      BoletaPDF(carrito, total, boletaNumero).generarPDF();
+    }
+  
+    // Llamar a una función para guardar o enviar las ventas realizadas
+    guardarVenta({
+      carrito,
+      total,
+      tipoDocumento,
+      fechaVenta: new Date().toLocaleString(),
+    });
+  
+    // Limpiar los datos de la compra y realizar una nueva venta
+    nuevaVenta();
+    setDialogVisible(false);
+  };
+  
+  
+  
 
   return (
     <div style={{ backgroundColor: "#0F1E25", minHeight: "100vh" }}>
@@ -187,8 +260,8 @@ const Venta = ({ logout }) => {
             <div
               style={{
                 position: "absolute",
-                top: "50px", // Desplazamos el menú hacia abajo
-                left: "0", // Colocamos el menú a la izquierda
+                top: "50px",
+                left: "0",
                 backgroundColor: "#1D3642",
                 borderRadius: "8px",
                 boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
@@ -199,7 +272,9 @@ const Venta = ({ logout }) => {
               }}
             >
               <ul style={{ listStyle: "none", padding: "0", margin: "0" }}>
-                <li style={{ padding: "10px 0", borderBottom: "1px solid #ccc", cursor: "pointer" }}>
+                <li 
+                onClick={nuevaVenta}
+                style={{ padding: "10px 0", borderBottom: "1px solid #ccc", cursor: "pointer" }}>
                   Nueva venta
                 </li>
                 <li
@@ -220,80 +295,317 @@ const Venta = ({ logout }) => {
       </nav>
 
       {/* Contenido principal */}
-      <div style={{ display: "flex", height: "calc(100vh - 60px)", padding: "20px" }}>
-        {/* Tabla de inventario */}
-        <div style={{ flex: 2, marginRight: "20px" }}>
-          <h2 style={{ color: "#fff", marginBottom: "10px" }}>Inventario</h2>
+<div style={{ display: "flex", height: "calc(100vh - 60px)", padding: "20px" }}>
+  <div style={{ flex: 2, marginRight: "20px" }}>
+    <h2 style={{ color: "#fff", marginBottom: "10px" }}>Inventario</h2>
+    <input
+      type="text"
+      placeholder="Buscar producto"
+      onChange={(e) => setSearchText(e.target.value)}
+      style={{
+        marginBottom: "10px",
+        padding: "8px",
+        borderRadius: "5px",
+        border: "1px solid #ccc",
+        width: "100%",
+      }}
+    />
+    <DataTable
+      columns={columnas}
+      data={productos.filter((producto) =>
+        producto.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
+        producto.id.toString().includes(searchText)
+      )}
+      customStyles={customStyles}
+      pagination
+    />
+  </div>
+
+  {/* Cuadro lateral */}
+  <div
+    style={{
+      flex: 1,
+      backgroundColor: "#1D3642",
+      borderRadius: "8px",
+      color: "#fff",
+      padding: "10px",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      maxHeight: "100%",
+    }}
+  >
+    <h2 style={{ marginBottom: "10px", color: "#FFFFFF" }}>Ticket de Compra</h2>
+    <div
+      style={{
+        flex: 1,
+        width: "100%",
+        overflowY: "auto",
+        marginBottom: "10px",
+        padding: "10px",
+        backgroundColor: "#13242C",
+        borderRadius: "5px",
+      }}
+    >
+      <ul style={{ listStyleType: "none", padding: "0", margin: "0" }}>
+        {carrito.map((item) => (
+          <li key={item.id} style={{ marginBottom: "10px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span>{item.nombre}</span>
+              <span>
+                {item.cantidadSeleccionada} x ${item.valor_unitario} = $
+                {item.subtotal}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <div
+      style={{
+        width: "100%",
+        padding: "10px",
+        backgroundColor: "#0F1E25",
+        borderRadius: "5px",
+      }}
+    >
+      <p style={{ margin: "5px 0" }}>Total antes de IVA: ${total.toFixed(2)}</p>
+      <p style={{ margin: "5px 0" }}>IVA (19%): ${iva.toFixed(2)}</p>
+      <p style={{ margin: "5px 0", fontWeight: "bold" }}>
+        Total: ${totalConIva.toFixed(2)}
+      </p>
+    </div>
+    <button
+      onClick={finalizarCompra}
+      style={{
+        marginTop: "10px",
+        backgroundColor: "#007bff",
+        color: "#fff",
+        padding: "10px",
+        borderRadius: "5px",
+        cursor: "pointer",
+        border: "none",
+      }}
+    >
+      Finalizar Compra
+    </button>
+  </div>
+</div> {/* Cierre del div principal */}
+
+{/* Diálogo para tipo de documento */}
+{dialogVisible && (
+  <div
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      zIndex: 1000,
+    }}
+  >
+    <div
+      style={{
+        backgroundColor: "#13242C",
+        padding: "20px",
+        borderRadius: "10px",
+        width: "400px",
+        textAlign: "center",
+        color: "#fff",
+      }}
+    >
+      <h3 style={{ marginBottom: "20px", fontSize: "20px" }}>
+        Selecciona el tipo de documento
+      </h3>
+      <select
+        value={tipoDocumento}
+        onChange={(e) => setTipoDocumento(e.target.value)}
+        style={{
+          margin: "10px 0",
+          padding: "10px",
+          borderRadius: "5px",
+          border: "1px solid #ccc",
+          width: "100%",
+          backgroundColor: "#1D3642",
+          color: "#FFFFFF",
+        }}
+      >
+        <option value="" disabled>
+          Selecciona
+        </option>
+        <option value="boleta">Boleta</option>
+        <option value="factura">Factura</option>
+      </select>
+
+      {tipoDocumento === "factura" && (
+        <div>
           <input
             type="text"
-            placeholder="Buscar producto"
-            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Razón Social"
+            value={facturaData.razonSocial}
+            onChange={(e) =>
+              setFacturaData({ ...facturaData, razonSocial: e.target.value })
+            }
             style={{
-              marginBottom: "10px",
-              padding: "8px",
+              margin: "10px 0",
+              padding: "10px",
               borderRadius: "5px",
               border: "1px solid #ccc",
               width: "100%",
+              backgroundColor: "#1D3642",
+              color: "#FFFFFF",
             }}
           />
-          <DataTable
-            columns={columnas}
-            data={productos.filter((producto) =>
-              producto.nombre.toLowerCase().includes(searchText.toLowerCase())
-            )}
-            customStyles={customStyles}
-            pagination
+          <input
+            type="text"
+            placeholder="RUT"
+            value={facturaData.rut}
+            onChange={(e) =>
+              setFacturaData({ ...facturaData, rut: e.target.value })
+            }
+            style={{
+              margin: "10px 0",
+              padding: "10px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+              width: "100%",
+              backgroundColor: "#1D3642",
+              color: "#FFFFFF",
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Giro"
+            value={facturaData.giro}
+            onChange={(e) =>
+              setFacturaData({ ...facturaData, giro: e.target.value })
+            }
+            style={{
+              margin: "10px 0",
+              padding: "10px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+              width: "100%",
+              backgroundColor: "#1D3642",
+              color: "#FFFFFF",
+            }}
+          />
+          <input
+            type="text"
+            placeholder="Dirección"
+            value={facturaData.direccion}
+            onChange={(e) =>
+              setFacturaData({ ...facturaData, direccion: e.target.value })
+            }
+            style={{
+              margin: "10px 0",
+              padding: "10px",
+              borderRadius: "5px",
+              border: "1px solid #ccc",
+              width: "100%",
+              backgroundColor: "#1D3642",
+              color: "#FFFFFF",
+            }}
           />
         </div>
+      )}
 
-        {/* Cuadro lateral */}
-        <div
+      <div style={{ marginTop: "20px", display: "flex", justifyContent: "space-between" }}>
+        <button
+          onClick={() => setDialogVisible(false)}
           style={{
-            flex: 1,
-            backgroundColor: "#1D3642",
-            borderRadius: "8px",
+            backgroundColor: "#dc3545",
             color: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
-            padding: "20px",
-            maxHeight: "100%",
+            padding: "10px",
+            borderRadius: "5px",
+            flex: 1,
+            marginRight: "10px",
+            cursor: "pointer",
+            border: "none",
           }}
         >
-          <div style={{ flex: 1, overflowY: "auto" }}>
-            <h2 style={{ textAlign: "center" }}>Ticket de Compra</h2>
-            <ul style={{ listStyleType: "none", padding: "0" }}>
-              {carrito.map((item) => (
-                <li key={item.id} style={{ marginBottom: "10px" }}>
-                  {item.nombre} - {item.cantidadSeleccionada} x ${item.valor_unitario} = $
-                  {item.cantidadSeleccionada * item.valor_unitario}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div style={{ fontSize: "25px",textAlign: "center" }}>
-            <div style={{ marginBottom: "10px" }}>
-              <strong>Total:</strong> ${total.toFixed(2)}
-            </div>
-            <div style={{ fontSize: "14px", color: "#ccc", marginBottom: "20px" }}>
-              <strong>Con IVA (19%):</strong> ${totalConIva.toFixed(2)}
-            </div>
-            <button
+          Cancelar
+        </button>
+        <button
+          onClick={confirmarDocumento}
+          style={{
+            backgroundColor: "#007bff",
+            color: "#fff",
+            padding: "10px",
+            borderRadius: "5px",
+            flex: 1,
+            cursor: "pointer",
+            border: "none",
+          }}
+        >
+          Confirmar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+      {/* Diálogo para tipo de documento */}
+      {dialogVisible && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#fff",
+              padding: "20px",
+              borderRadius: "10px",
+              width: "300px",
+              textAlign: "center",
+            }}
+          >
+            <h3>Selecciona el tipo de documento</h3>
+            <select
+              value={tipoDocumento}
+              onChange={(e) => setTipoDocumento(e.target.value)}
               style={{
-                backgroundColor: "#28a745",
-                color: "#fff",
-                border: "none",
-                padding: "10px 20px",
-                cursor: "pointer",
+                margin: "10px 0",
+                padding: "8px",
                 borderRadius: "5px",
+                border: "1px solid #ccc",
+                width: "100%",
               }}
-              onClick={() => alert("Compra realizada con éxito")}
             >
-              Finalizar compra
+              <option value="">Selecciona</option>
+              <option value="boleta">Boleta</option>
+              <option value="factura">Factura</option>
+            </select>
+            <button
+              onClick={confirmarDocumento}
+              style={{
+                marginTop: "10px",
+                backgroundColor: "#007bff",
+                color: "#fff",
+                padding: "10px",
+                borderRadius: "5px",
+                cursor: "pointer",
+                border: "none",
+              }}
+            >
+              Confirmar
             </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
