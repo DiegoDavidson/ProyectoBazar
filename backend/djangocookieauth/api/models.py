@@ -31,7 +31,7 @@ class Producto(models.Model):
 
 class EstadoDiaVentas(models.Model):
     abierto = models.BooleanField(default=True)
-    fecha = models.DateField(auto_now=True)
+    inicio_dia = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
          return "Abierto" if self.abierto else "Cerrado"

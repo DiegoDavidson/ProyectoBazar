@@ -51,15 +51,14 @@ class App extends React.Component {
         console.log(err);
       });
   };
-
   login = (event) => {
     event.preventDefault();
-
+  
     if (this.state.username === '' || this.state.password === '') {
       this.setState({ error: 'Por favor ingrese ambos campos' });
       return;
     }
-
+  
     fetch('/api/login/', {
       method: 'POST',
       headers: {
@@ -72,12 +71,24 @@ class App extends React.Component {
         password: this.state.password,
       }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (res.status === 403) {
+          this.setState({ error: 'El sistema está cerrado. No puede iniciar sesión en este momento.' });
+          return;
+        }
+        return res.json();
+      })
       .then((data) => {
-        if (data.detail === 'Credenciales incorrectas') {
+        if (data?.detail === 'Credenciales incorrectas') {
           this.setState({ error: 'Credenciales incorrectas' });
-        } else {
-          this.setState({ isAuthenticated: true, role: data.role, username: '', password: '', error: '' });
+        } else if (data) {
+          this.setState({
+            isAuthenticated: true,
+            role: data.role,
+            username: '',
+            password: '',
+            error: '',
+          });
           console.log('El rol del usuario es:', data.role);
         }
       })
@@ -86,6 +97,7 @@ class App extends React.Component {
         this.setState({ error: 'Error en la solicitud' });
       });
   };
+  
 
   logout = () => {
     fetch("/api/logout/", {

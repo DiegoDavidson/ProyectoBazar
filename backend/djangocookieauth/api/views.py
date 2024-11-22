@@ -18,28 +18,38 @@ from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db.models import Sum, Count
 
-@require_POST
+@csrf_exempt
 def login_view(request):
-    data = json.loads(request.body)
-    username = data.get("username")
-    password = data.get("password")
+    if request.method == "POST":
+        data = json.loads(request.body)
+        username = data.get("username")
+        password = data.get("password")
 
-    if not username or not password:
-        return JsonResponse({"detail": "Ingrese su usuario y contraseña"}, status=400)
-    
-    user = authenticate(username=username, password=password)
-    if user is None:
-        return JsonResponse({"detail": "Credenciales incorrectas"}, status=400)
-    
-    login(request, user)
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            # Si es un vendedor, verificar el estado del día
+            if user.groups.filter(name="vendedor").exists():
+                estado_actual = EstadoDiaVentas.objects.first()
+                if estado_actual and not estado_actual.abierto:
+                    return JsonResponse(
+                        {"detail": "El sistema está cerrado. No puede iniciar sesión en este momento."},
+                        status=403
+                    )
+                login(request, user)
+                return JsonResponse({"role": "vendedor"})
+            
+            # Si es un gerente, permitir el acceso
+            elif user.groups.filter(name="gerente").exists():
+                login(request, user)
+                return JsonResponse({"role": "gerente"})
 
-    role = None
-    if user.groups.filter(name="vendedor").exists():
-        role = "vendedor"
-    elif user.groups.filter(name="gerente").exists():
-        role = "gerente"
+            # Si pertenece a otros roles, denegar acceso
+            else:
+                return JsonResponse({"detail": "No tiene permisos para iniciar sesión."}, status=403)
+        else:
+            return JsonResponse({"detail": "Credenciales incorrectas"}, status=401)
+    return JsonResponse({"detail": "Método no permitido"}, status=405)
 
-    return JsonResponse({"detail": "Ingreso correcto", "role": role})
 
 @require_POST
 def logout_view(request):
@@ -61,21 +71,35 @@ def session_view(request):
         role = "gerente"
     return JsonResponse({"isAuthenticated": True, "role": role})
 
-
 @csrf_exempt
 def cambiar_estado_ventas(request):
-    if request.method == 'POST':
-        estado_actual, created = EstadoDiaVentas.objects.get_or_create(id=1)
-        estado_actual.abierto = not estado_actual.abierto
-        estado_actual.save()
+    if request.method == "POST":
+        estado_actual = EstadoDiaVentas.objects.first()
         
-        estado = "abierto" if estado_actual.abierto else "cerrado"
-        return JsonResponse({'estado': estado, 'mensaje': f'Día de ventas {estado} exitosamente'})
+        if not estado_actual:
+            estado_actual = EstadoDiaVentas.objects.create(abierto=False)
+        
+        if estado_actual.abierto:
+            # Si el día está abierto, cerrarlo
+            estado_actual.abierto = False
+            estado_actual.inicio_dia = None  # Reinicia el tiempo de inicio
+            estado_actual.save()
+            return JsonResponse({"estado": "cerrado", "inicio_dia": None})
+        else:
+            # Si el día está cerrado, abrirlo
+            estado_actual.abierto = True
+            estado_actual.inicio_dia = now()  # Registra la hora de inicio
+            estado_actual.save()
+            return JsonResponse({"estado": "abierto", "inicio_dia": estado_actual.inicio_dia})
+
+    return JsonResponse({"detail": "Método no permitido"}, status=405)
+
 
 def obtener_estado_ventas(request):
     estado_actual = EstadoDiaVentas.objects.first()
     estado = "abierto" if estado_actual and estado_actual.abierto else "cerrado"
-    return JsonResponse({'estado': estado})
+    inicio_dia = estado_actual.inicio_dia if estado_actual else None
+    return JsonResponse({'estado': estado, 'inicio_dia': inicio_dia})
 
 
 
