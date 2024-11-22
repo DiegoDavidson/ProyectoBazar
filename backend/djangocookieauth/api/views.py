@@ -170,33 +170,41 @@ def editar_producto(request, id):
 @login_required
 def registrar_venta(request):
     if request.method == "POST":
-        data = json.loads(request.body)
-        print("Datos recibidos:", data)  # Para verificar la recepción de datos
-        print("Usuario autenticado:", request.user if request.user.is_authenticated else "No autenticado")
+        try:
+            data = json.loads(request.body)
+            print("Datos recibidos:", data)  # Verificar datos recibidos
+            print("Usuario autenticado:", request.user.username)
 
-        tipo_documento = data.get("tipo_documento")
-        total = data.get("total")
-        vendedor = request.user  # Obteniendo el vendedor autenticado
-        
-        # Crear la venta
-        venta = Venta.objects.create(
-            vendedor=vendedor,
-            total=total,
-            tipo_documento=tipo_documento,
-        )
-        
-        # Imprimir detalles de la venta para verificar
-        print("Venta guardada:", venta.id, venta.total, venta.tipo_documento, venta.vendedor.username)
-        
-        # Enviar el ID de la venta, el nombre del vendedor y la fecha/hora de la venta como respuesta
-        return JsonResponse({
-            "status": "success",
-            "venta_id": venta.id,
-            "vendedor_nombre": vendedor.username,  # o vendedor.get_full_name() si deseas el nombre completo
-            "fecha_venta": venta.fecha_venta.strftime("%Y-%m-%d %H:%M:%S")  # Formatear fecha y hora
-        })
-    
-    return JsonResponse({"status": "failed"}, status=400)
+            # Obtener datos de la solicitud
+            tipo_documento = data.get("tipoDocumento")  # Ajustado al frontend
+            total = data.get("total")
+            carrito = data.get("carrito", [])  # Para procesar los productos (si es necesario)
+            
+            # Validaciones
+            if not tipo_documento or not total:
+                return JsonResponse({"status": "failed", "error": "Faltan campos obligatorios"}, status=400)
+            
+            # Crear la venta
+            venta = Venta.objects.create(
+                vendedor=request.user,
+                total=total,
+                tipo_documento=tipo_documento
+            )
+
+            # Imprimir detalles de la venta para verificar
+            print("Venta guardada:", venta.id, venta.total, venta.tipo_documento, venta.vendedor.username)
+
+            return JsonResponse({
+                "status": "success",
+                "venta_id": venta.id,
+                "vendedor_nombre": request.user.username,
+                "fecha_venta": venta.fecha_venta.strftime("%Y-%m-%d %H:%M:%S")
+            })
+        except Exception as e:
+            print("Error al registrar la venta:", str(e))
+            return JsonResponse({"status": "failed", "error": str(e)}, status=500)
+
+    return JsonResponse({"status": "failed", "error": "Método no permitido"}, status=405)
 
 
 @login_required

@@ -39,6 +39,13 @@ class EstadoDiaVentas(models.Model):
 class Venta(models.Model):
     vendedor = models.ForeignKey(User, on_delete=models.CASCADE)
     total = models.DecimalField(max_digits=10, decimal_places=2)
-    tipo_documento = models.CharField(max_length=10, choices=[('Boleta', 'Boleta'), ('Factura', 'Factura')])
+    tipo_documento = models.CharField(
+        max_length=10,
+        choices=[('Boleta', 'Boleta'), ('Factura', 'Factura')],
+        null=False
+    )
     fecha_venta = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Venta {self.id} - {self.tipo_documento} - {self.vendedor.username}"
 

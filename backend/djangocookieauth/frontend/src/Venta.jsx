@@ -175,6 +175,9 @@ const Venta = ({ logout }) => {
 
   const calcularIVA = (total) => total * 0.19;
 
+  const [ventas, setVentas] = useState([]);
+
+
   const iva = calcularIVA(total);
   const totalConIva = total + iva;
 
@@ -182,50 +185,87 @@ const Venta = ({ logout }) => {
     setDialogVisible(true); // Mostrar cuadro de diálogo para seleccionar documento
   };
 
-  const guardarVenta = (venta) => {
-    // Aquí puedes enviar los datos de la venta al backend, o actualizar el estado
-    // Este es un ejemplo simple donde simplemente agregamos la venta a un array de ventas
-    setVentas(prevVentas => [...prevVentas, venta]);
-  };
-
-  const confirmarDocumento = () => {
-    if (!tipoDocumento) {
-      alert("Por favor, selecciona un tipo de documento.");
-      return;
-    }
+  async function guardarVenta(data) {
+    const csrftoken = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("csrftoken"))
+      ?.split("=")[1];
   
-    if (tipoDocumento === "factura") {
-      if (
-        !facturaData.razonSocial.trim() ||
-        !facturaData.rut.trim() ||
-        !facturaData.giro.trim() ||
-        !facturaData.direccion.trim()
-      ) {
-        alert("Por favor, completa todos los campos para la factura.");
-        return;
+    try {
+      const response = await fetch("/api/registrar-venta/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrftoken,
+        },
+        body: JSON.stringify(data),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al guardar la venta.");
       }
   
-      const facturaNumero = Date.now(); // Generar un número único
-      FacturaPDF(carrito, total, facturaNumero, facturaData).generarPDF();
+      return await response.json();
+    } catch (error) {
+      console.error("Error al guardar la venta:", error);
+      throw error;
     }
+  }
   
-    if (tipoDocumento === "boleta") {
-      const boletaNumero = Date.now(); // Generar un número único
-      BoletaPDF(carrito, total, boletaNumero).generarPDF();
-    }
-  
-    // Llamar a una función para guardar o enviar las ventas realizadas
-    guardarVenta({
-      carrito,
-      total,
-      tipoDocumento,
-      fechaVenta: new Date().toLocaleString(),
-    });
-  
-    // Limpiar los datos de la compra y realizar una nueva venta
-    nuevaVenta();
-    setDialogVisible(false);
-  };
+
+
+
+
+
+
+    const confirmarDocumento = async () => {
+      if (!tipoDocumento) {
+        alert("Por favor, selecciona un tipo de documento.");
+        return;
+      }
+    
+      // Validación adicional para facturas
+      if (tipoDocumento === "factura") {
+        const { razonSocial, rut, giro, direccion } = facturaData;
+        if (!razonSocial.trim() || !rut.trim() || !giro.trim() || !direccion.trim()) {
+          alert("Por favor, completa todos los campos para la factura.");
+          return;
+        }
+      }
+    
+      try {
+        // Preparar los datos para el backend
+        const ventaData = {
+          carrito,
+          total: totalConIva,
+          tipoDocumento,
+          fechaVenta: new Date().toISOString(),
+          ...(tipoDocumento === "factura" ? { facturaData } : {}),
+        };
+    
+        // Guardar la venta
+        const ventaGuardada = await guardarVenta(ventaData);
+        console.log("Venta guardada con éxito:", ventaGuardada);
+    
+        // Generar PDF del documento
+        if (tipoDocumento === "factura") {
+          const facturaNumero = ventaGuardada.numeroFactura || Date.now();
+          FacturaPDF(carrito, total, facturaNumero, facturaData).generarPDF();
+        } else if (tipoDocumento === "boleta") {
+          const boletaNumero = ventaGuardada.numeroBoleta || Date.now();
+          BoletaPDF(carrito, total, boletaNumero).generarPDF();
+        }
+    
+        // Reiniciar los datos para una nueva venta
+        nuevaVenta();
+        setDialogVisible(false);
+      } catch (error) {
+        console.error("Error al guardar la venta:", error);
+        alert("Hubo un problema al registrar la venta. Inténtalo nuevamente.");
+      }
+    };
+    
   
   
   
