@@ -183,7 +183,7 @@ const Inventario = ({ logout }) => {
           color: 'white',
         }}
       >
-        <Navbar />
+        <Navbar logout={logout} />
       </div>
       <div
         style={{

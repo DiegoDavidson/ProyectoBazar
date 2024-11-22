@@ -60,7 +60,7 @@ const GerenteDashboard = ({ logout }) => {
 
   return (
     <div style={{ backgroundColor: '#0F1E25', minHeight: '100vh', padding: '10px', position: 'relative' }}>
-      <Navbar />
+      <Navbar logout={logout} />
 
       <div className="container" style={{ color: 'white', maxWidth: '70%', margin: 'auto', padding: '20px' }}>
         <h1 className="my-5 text-center">Inicio - Dashboard del Gerente</h1>

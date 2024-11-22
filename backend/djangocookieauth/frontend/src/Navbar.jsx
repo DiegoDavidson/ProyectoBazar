@@ -11,9 +11,15 @@ const Navbar = ({ logout }) => {
   const navigate = useNavigate();
 
   // Handle logout
-  const handleLogout = () => {
-    logout(); // Llama a la función logout pasada como prop
-    navigate('/login'); // Redirige al login después de cerrar sesión
+  const handleLogout = async () => {
+    try {
+      await logout();
+      alert("Sesión cerrada exitosamente.");
+      navigate('/login');
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      alert("Error al cerrar sesión. Intenta nuevamente.");
+    }
   };
 
   return (

@@ -88,12 +88,18 @@ class App extends React.Component {
   };
 
   logout = () => {
-    fetch('/api/logout/', {
-      credentials: 'same-origin',
+    fetch("/api/logout/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": cookies.get("csrftoken"),
+      },
+      credentials: "include",
     })
       .then((res) => res.json())
       .then((data) => {
         this.setState({ isAuthenticated: false, role: null });
+        window.location.href = "/"; // Redirige a la página de inicio de sesión
       })
       .catch((err) => {
         console.log(err);
@@ -192,13 +198,13 @@ class App extends React.Component {
             </>
           ) : this.state.role === 'gerente' ? (
             <>
-              <Route path="/gerente-dashboard" element={<><Navbar logout={this.logout} /><GerenteDashboard /></>} />
-              <Route path="/inventario" element={<Inventario />} />
-              <Route path="/ventasDiarias" element={<VentasDiarias />} />
+              <Route path="/gerente-dashboard" element={<GerenteDashboard logout={this.logout} />} />
+              <Route path="/inventario" element={<Inventario logout={this.logout} />} />
+              <Route path="/ventasDiarias" element={<VentasDiarias logout={this.logout} />} />
               <Route path="/vendedores" element={<Vendedores />} />
               <Route path="/gestionUsuario" element={<GestionUsuario />} />
               <Route path="/addProducto" element={<AddProducto />} />
-              <Route path="/InformeVentas" element={<InformeVentas />} />
+              <Route path="/InformeVentas" element={<InformeVentas logout={this.logout}/>} />
               <Route path="*" element={<Navigate to="/gerente-dashboard" />} />
             </>
           ) : (

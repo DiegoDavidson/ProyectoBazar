@@ -41,11 +41,12 @@ def login_view(request):
 
     return JsonResponse({"detail": "Ingreso correcto", "role": role})
 
+@require_POST
 def logout_view(request):
     if not request.user.is_authenticated:
-        return JsonResponse({"detail": "No estas en sesion"}, status = 400)
+        return JsonResponse({"detail": "No estás en sesión"}, status=400)
     logout(request)
-    return JsonResponse({"detail": "Sesion Cerrada exitosamente"})
+    return JsonResponse({"detail": "Sesión cerrada exitosamente"})
 
 @ensure_csrf_cookie
 def session_view(request):
