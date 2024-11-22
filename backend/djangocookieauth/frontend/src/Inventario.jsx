@@ -15,6 +15,8 @@ const CustomPagination = ({ rowsPerPage, rowCount, onChangePage, currentPage }) 
     if (currentPage < totalPages) onChangePage(currentPage + 1);
   };
 
+
+
   return (
     <div
       style={{
@@ -75,9 +77,54 @@ const Inventario = ({ logout }) => {
   const [productos, setProductos] = useState([]);
   const [filteredProductos, setFilteredProductos] = useState([]);
 
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === `${name}=`) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  
+
   useEffect(() => {
     fetchProductos();
   }, []);
+
+  const eliminarProducto = (id) => {
+    if (window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+      fetch(`/api/eliminar-producto/${id}/`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken'),
+        },
+      })
+        .then((res) => {
+          if (res.ok) {
+            setMessage("Producto eliminado exitosamente");
+            setProductos((prevProductos) => prevProductos.filter((prod) => prod.id !== id));
+            setFilteredProductos((prevFiltered) => prevFiltered.filter((prod) => prod.id !== id));
+          } else {
+            res.json().then((data) => {
+              setMessage(data.error || "Error al eliminar el producto");
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("Error al eliminar producto:", err);
+          setMessage("Error al eliminar el producto");
+        });
+    }
+  };
+  
 
   const fetchProductos = () => {
     fetch('/api/listar-productos/')
@@ -123,9 +170,6 @@ const Inventario = ({ logout }) => {
       name: 'Acciones',
       cell: (row) => (
         <div>
-          <button className="btn btn-warning btn-sm me-2" onClick={() => navigate('/addProducto', { state: { producto: row } })}>
-            Editar
-          </button>
           <button className="btn btn-danger btn-sm" onClick={() => eliminarProducto(row.id)}>
             Eliminar
           </button>

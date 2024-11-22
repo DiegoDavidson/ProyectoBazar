@@ -6,14 +6,12 @@ const GerenteDashboard = ({ logout }) => {
   const [estadoDia, setEstadoDia] = useState(null);
   const navigate = useNavigate();
 
-  // Llama a la API para obtener el estado de ventas al cargar el componente
   useEffect(() => {
     const obtenerEstado = async () => {
       try {
         const response = await fetch('/api/obtener_estado_ventas/');
         const data = await response.json();
         setEstadoDia(data.estado === "abierto");
-        console.log("Estado del día al cargar:", data.estado);
       } catch (error) {
         console.error("Error al obtener estado:", error);
       }
@@ -21,118 +19,96 @@ const GerenteDashboard = ({ logout }) => {
     obtenerEstado();
   }, []);
 
-  const handleToggleEstado = async () => {
+  const abrirDia = async () => {
     try {
-      const response = await fetch('/api/cambiar_estado_ventas/', { method: 'POST' });
+      const response = await fetch('/api/cambiar_estado_ventas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ abierto: true }),
+      });
       const data = await response.json();
-      setEstadoDia(data.estado === "abierto");
-      console.log("Estado del día después de cambiar:", data.estado);
+      setEstadoDia(true);
+      alert(data.mensaje);
     } catch (error) {
-      console.error("Error al cambiar estado:", error);
+      console.error("Error al abrir el día:", error);
     }
   };
 
-  // Función para abrir el día
-  const abrirDia = async () => {
-    const response = await fetch('/api/cambiar_estado_ventas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ abierto: true })
-    });
-    const data = await response.json();
-    setEstadoDia(true);
-    alert(data.mensaje);
-    console.log("Estado del día después de abrir:", true); // Debug: Estado después de abrir
-  };
-
-  // Función para cerrar el día
   const cerrarDia = async () => {
-    const response = await fetch('/api/cambiar_estado_ventas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ abierto: false })
-    });
-    const data = await response.json();
-    setEstadoDia(false);
-    alert(data.mensaje);
-    console.log("Estado del día después de cerrar:", false); // Debug: Estado después de cerrar
+    try {
+      const response = await fetch('/api/cambiar_estado_ventas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ abierto: false }),
+      });
+      const data = await response.json();
+      setEstadoDia(false);
+      alert(data.mensaje);
+    } catch (error) {
+      console.error("Error al cerrar el día:", error);
+    }
   };
 
   return (
-    <div style={{ backgroundColor: '#0F1E25', minHeight: '100vh', padding: '10px', position: 'relative' }}>
+    <div style={{ display: 'flex', backgroundColor: '#0F1E25', minHeight: '100vh' }}>
       <Navbar logout={logout} />
 
-      <div className="container" style={{ color: 'white', maxWidth: '70%', margin: 'auto', padding: '20px' }}>
+      <div
+        className="container"
+        style={{
+          marginLeft: '250px', // Ancho aproximado del Navbar
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          color: 'white',
+        }}
+      >
         <h1 className="my-5 text-center">Inicio - Dashboard del Gerente</h1>
 
-        {/* Estado del día con color condicional */}
-        <h2 
-          className="text-center"
-          style={{ color: estadoDia ? 'green' : 'red', marginBottom: '20px' }}
-        >
+        <h2 style={{ color: estadoDia ? 'green' : 'red', marginBottom: '20px' }}>
           {estadoDia ? 'Día de Ventas Abierto' : 'Día de Ventas Cerrado'}
         </h2>
 
-        {/* Resumen de opciones principales */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            gap: '20px',
+            marginBottom: '30px',
+          }}
+        >
           <button
             onClick={() => navigate('/inventario')}
-            style={{
-              width: '30%',
-              padding: '20px',
-              backgroundColor: '#1D3642',
-              border: 'none',
-              color: 'white',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
+            style={buttonStyle}
           >
             Gestionar Inventario
           </button>
           <button
             onClick={() => navigate('/ventasdiarias')}
-            style={{
-              width: '30%',
-              padding: '20px',
-              backgroundColor: '#1D3642',
-              border: 'none',
-              color: 'white',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
+            style={buttonStyle}
           >
             Ver Ventas Diarias
           </button>
           <button
             onClick={() => navigate('/InformeVentas')}
-            style={{
-              width: '30%',
-              padding: '20px',
-              backgroundColor: '#1D3642',
-              border: 'none',
-              color: 'white',
-              borderRadius: '8px',
-              cursor: 'pointer',
-            }}
+            style={buttonStyle}
           >
-            Informe De Ventas Del Dia
+            Informe De Ventas Del Día
           </button>
         </div>
 
-        {/* Botones para abrir y cerrar el día */}
-        <div style={{ textAlign: 'left', marginTop: '40px' }}>
+        <div>
           <button
             onClick={abrirDia}
             style={{
-              padding: '15px 30px',
+              ...toggleButtonStyle,
               backgroundColor: '#5CB85C',
-              border: 'none',
-              color: 'white',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              marginRight: '10px',
-              opacity: estadoDia ? 0.5 : 1,  // Deshabilitar si el día ya está abierto
-              pointerEvents: estadoDia ? 'none' : 'auto' // Evitar clics si el día ya está abierto
+              opacity: estadoDia ? 0.5 : 1,
+              pointerEvents: estadoDia ? 'none' : 'auto',
             }}
           >
             Abrir el Día
@@ -140,14 +116,10 @@ const GerenteDashboard = ({ logout }) => {
           <button
             onClick={cerrarDia}
             style={{
-              padding: '15px 30px',
+              ...toggleButtonStyle,
               backgroundColor: '#D9534F',
-              border: 'none',
-              color: 'white',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              opacity: estadoDia ? 1 : 0.5, // Deshabilitar si el día ya está cerrado
-              pointerEvents: estadoDia ? 'auto' : 'none' // Evitar clics si el día ya está cerrado
+              opacity: estadoDia ? 1 : 0.5,
+              pointerEvents: estadoDia ? 'auto' : 'none',
             }}
           >
             Cerrar el Día
@@ -156,6 +128,26 @@ const GerenteDashboard = ({ logout }) => {
       </div>
     </div>
   );
+};
+
+const buttonStyle = {
+  width: '250px',
+  padding: '20px',
+  backgroundColor: '#1D3642',
+  border: 'none',
+  color: 'white',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  textAlign: 'center',
+};
+
+const toggleButtonStyle = {
+  padding: '15px 30px',
+  margin: '10px',
+  border: 'none',
+  color: 'white',
+  borderRadius: '8px',
+  cursor: 'pointer',
 };
 
 export default GerenteDashboard;

@@ -74,15 +74,6 @@ const Navbar = ({ logout }) => {
             Ventas del día
           </button>
         </li>
-        <li style={{ marginBottom: '20px' }}>
-          <button 
-            className="btn btn-link text-decoration-none text-white w-100 text-start"
-            onClick={() => navigate('/gestionUsuario')}
-          >
-            <img src={GestionarUsuarioIcon} alt="Gestionar Usuarios" style={{ width: '20px', marginRight: '10px' }} />
-            Gestionar Usuarios
-          </button>
-        </li>
         <li>
           <button 
             className="btn btn-link text-decoration-none text-white w-100 text-start"

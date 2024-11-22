@@ -122,6 +122,9 @@ def agregar_producto(request):
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
 
+
+
+
 def listar_productos(request):
     productos = Producto.objects.all()
     productos_data = [
@@ -146,6 +149,7 @@ def eliminar_producto(request, id):
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Producto.DoesNotExist:
         return Response({'error': 'Producto no encontrado'}, status=status.HTTP_404_NOT_FOUND)
+
     
     
 @csrf_exempt
