@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; 
 import BazarImage from './Components/assets/Bazar.png';
 import LogoutImage from './Components/assets/Logout.png';
@@ -6,12 +6,20 @@ import Ventas from './Components/assets/Shop.png';
 import InicioIcon from './Components/assets/Home.png';
 import InventarioIcon from './Components/assets/Inventory.png';
 import GestionarUsuarioIcon from './Components/assets/ManageAccound.png';
+import DialogoCierre from './DialogoCierre'; // Importamos el nuevo componente
 
 const Navbar = ({ logout }) => {
   const navigate = useNavigate();
+  const [dialogVisible, setDialogVisible] = useState(false); // Estado para controlar la visibilidad del diálogo
 
-  // Handle logout
-  const handleLogout = async () => {
+  // Función para mostrar el diálogo
+  const handleCerrarSesion = () => {
+    setDialogVisible(true); // Muestra el cuadro de confirmación
+  };
+
+  // Función para cerrar sesión después de la confirmación
+  const handleConfirmarCerrarSesion = async () => {
+    setDialogVisible(false); // Cierra el cuadro de confirmación
     try {
       await logout();
       alert("Sesión cerrada exitosamente.");
@@ -20,6 +28,11 @@ const Navbar = ({ logout }) => {
       console.error("Error al cerrar sesión:", error);
       alert("Error al cerrar sesión. Intenta nuevamente.");
     }
+  };
+
+  // Función para cancelar el cierre de sesión
+  const handleCancelarCerrarSesion = () => {
+    setDialogVisible(false); // Cierra el cuadro de confirmación
   };
 
   return (
@@ -77,13 +90,20 @@ const Navbar = ({ logout }) => {
         <li>
           <button 
             className="btn btn-link text-decoration-none text-white w-100 text-start"
-            onClick={handleLogout}
+            onClick={handleCerrarSesion} // Mostramos el diálogo de confirmación
           >
             <img src={LogoutImage} alt="Cerrar Sesión" style={{ width: '20px', marginRight: '10px' }} />
             Cerrar caja
           </button>
         </li>
       </ul>
+
+      {/* Cuadro de confirmación de cierre de sesión */}
+      <DialogoCierre
+        visible={dialogVisible}
+        onConfirmar={handleConfirmarCerrarSesion}
+        onCancelar={handleCancelarCerrarSesion}
+      />
     </div>
   );
 };

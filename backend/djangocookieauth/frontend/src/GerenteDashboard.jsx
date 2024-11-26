@@ -1,8 +1,10 @@
 import Navbar from './Navbar';
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
+import EstadoDiaDialog from './EstadoDialogo';
 
 const GerenteDashboard = ({ logout }) => {
+  const [dialogVisible, setDialogVisible] = useState(false);
   const [estadoDia, setEstadoDia] = useState(null);
 const [inicioDia, setInicioDia] = useState(null);
 const [tiempoAbierto, setTiempoAbierto] = useState("");
@@ -47,15 +49,29 @@ const calcularTiempoAbierto = (inicio) => {
 };
 
 const cambiarEstadoDia = async () => {
+  setDialogVisible(true);
+};
+
+const handleConfirmarEstado = async () => {
+  setDialogVisible(false);
+
   try {
-    const response = await fetch('/api/cambiar_estado_ventas', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch ("/api/cambiar_estado_ventas", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
     });
+
+    if (!response.ok) {
+      throw new Error ("Eerror al cambiar el estado del día")
+    }
+
     const data = await response.json();
-    setEstadoDia(data.estado === "abierto");
-    setInicioDia(data.inicio_dia); // Actualizamos la hora de inicio del día
-    alert(data.mensaje);
+    if (data && data.estado){
+      setEstadoDia(data.estado === "abierto");
+      setInicioDia(data.inicio_dia || null);
+      alert(data.mensaje);
+    }
+    
   } catch (error) {
     console.error("Error al cambiar el estado del día:", error);
   }
@@ -68,13 +84,13 @@ return (
     <div
       className="container"
       style={{
-        marginLeft: '250px', // Ancho aproximado del Navbar
+        marginLeft: '250px', // Ajuste para compensar el ancho del Navbar
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '20px',
+        alignItems: 'center', // Centrar horizontalmente
+        justifyContent: 'center', // Centrar verticalmente
+        height: '100vh', // Asegura que ocupe toda la altura de la pantalla
         color: 'white',
       }}
     >
@@ -129,6 +145,14 @@ return (
         >
           {estadoDia ? 'Cerrar el Día' : 'Abrir el Día'}
         </button>
+
+        <EstadoDiaDialog
+          visible={dialogVisible}
+          estadoDia={estadoDia}
+          onConfirm={handleConfirmarEstado}
+          onCancel={() => setDialogVisible(false)}
+        />
+
       </div>
     </div>
   </div>

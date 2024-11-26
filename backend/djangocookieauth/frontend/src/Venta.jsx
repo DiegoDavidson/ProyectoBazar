@@ -42,6 +42,8 @@ const Venta = ({ logout }) => {
     navigate("/login");
   };
 
+  const confirmLogout = () => setDialogVisible(true)
+
   const agregarAlCarrito = (producto) => {
     if (!producto.cantidadSeleccionada || producto.cantidadSeleccionada < 1) {
       alert("Por favor, selecciona una cantidad válida.");

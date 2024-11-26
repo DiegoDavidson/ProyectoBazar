@@ -172,20 +172,22 @@ const VentasDiarias = ({ventas}) => {
           {/* Filtro permanente */}
           <div style={{ marginBottom: '20px', backgroundColor: '#13242C', padding: '10px', borderRadius: '5px' }}>
             <label style={{ color: '#FFFFFF', marginRight: '10px' }}>Tipo de Documento:</label>
-            <select 
-              value={filterType} 
+            <select
+              value={filterType}
               onChange={handleFilterChange}
               style={{
-                padding: '5px',
-                backgroundColor: '#1D3642',
+                fontFamily: 'Quicksand', // Asegura la fuente
+                fontWeight: 400,
                 color: '#FFFFFF',
+                backgroundColor: '#1D3642',
                 border: 'none',
                 borderRadius: '5px',
+                padding: '5px',
               }}
             >
               <option value="">Todos</option>
-              <option value="Boleta">Boleta</option>
-              <option value="Factura">Factura</option>
+              <option value="boleta">Boleta</option>
+              <option value="factura">Factura</option>
             </select>
           </div>
 
