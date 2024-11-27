@@ -13,7 +13,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from .models import EstadoDiaVentas
-from .models import Venta
+from .models import Venta, Factura
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db.models import Sum, Count
@@ -88,19 +88,16 @@ def cambiar_estado_ventas(request):
                 estado_actual.inicio_dia = None  # Reinicia el tiempo de inicio
                 estado_actual.save()
 
-                # Reiniciar ventas del día actual
-                Venta.objects.filter(fecha_venta__date=date.today()).delete()
-
             return JsonResponse({
                 "estado": "cerrado", 
                 "inicio_dia": None, 
-                "mensaje": "El día de ventas se ha cerrado y las ventas del día se han reiniciado."
+                "mensaje": "El día de ventas se ha cerrado. Las ventas no se han eliminado."
             })
         else:
             # Si el día está cerrado, abrirlo
             with transaction.atomic():
-                # Eliminar las ventas anteriores
-                Venta.objects.all().delete()  # Elimina todas las ventas
+                # Eliminar las ventas del día actual al abrir el nuevo día
+                Venta.objects.filter(fecha_venta__date=date.today()).delete()
                 estado_actual.abierto = True
                 estado_actual.inicio_dia = now()  # Registra la hora de inicio
                 estado_actual.save()
@@ -108,10 +105,11 @@ def cambiar_estado_ventas(request):
             return JsonResponse({
                 "estado": "abierto", 
                 "inicio_dia": estado_actual.inicio_dia, 
-                "mensaje": "El día de ventas se ha abierto y las ventas anteriores se han eliminado."
+                "mensaje": "El día de ventas se ha abierto y las ventas del día actual se han eliminado."
             })
 
     return JsonResponse({"detail": "Método no permitido"}, status=405)
+
 
 
 def obtener_estado_ventas(request):
@@ -217,41 +215,66 @@ def editar_producto(request, id):
 @login_required
 def registrar_venta(request):
     if request.method == "POST":
+        print("Iniciando el método registrar_venta")
         try:
+            # Cargar los datos enviados por el cliente
             data = json.loads(request.body)
-            print("Datos recibidos:", data)  # Verificar datos recibidos
-            print("Usuario autenticado:", request.user.username)
+            print("Datos completos recibidos:", data)
 
-            # Obtener datos de la solicitud
-            tipo_documento = data.get("tipoDocumento")  # Ajustado al frontend
+            # Extraer los valores del tipo de documento y total
+            tipo_documento = data.get("tipoDocumento")
+            print("Tipo de documento recibido:", tipo_documento)
+
             total = data.get("total")
-            carrito = data.get("carrito", [])  # Para procesar los productos (si es necesario)
-            
-            # Validaciones
-            if not tipo_documento or not total:
-                return JsonResponse({"status": "failed", "error": "Faltan campos obligatorios"}, status=400)
-            
-            # Crear la venta
+            factura_data = data.get("facturaData", {})
+
+            # Procesamiento especial si es una factura
+            if tipo_documento == "factura":
+                print("Procesando una factura")
+                required_fields = ["razonSocial", "rut", "giro", "direccion"]
+                if not all(factura_data.get(field, "").strip() for field in required_fields):
+                    print("Faltan datos obligatorios en la factura:", factura_data)
+                    return JsonResponse({"status": "failed", "error": "Faltan datos de la factura"}, status=400)
+
+                # Imprimir los datos de la factura para depuración
+                print("Datos de la factura:")
+                print(f"Razón Social: {factura_data.get('razonSocial')}")
+                print(f"RUT: {factura_data.get('rut')}")
+                print(f"Giro: {factura_data.get('giro')}")
+                print(f"Dirección: {factura_data.get('direccion')}")
+
+            # Crear la venta en la base de datos
             venta = Venta.objects.create(
-                vendedor=request.user,
+                vendedor=request.user,  # Se asume que el vendedor es el usuario autenticado
                 total=total,
                 tipo_documento=tipo_documento
             )
+            print("Venta guardada con éxito:", venta.id)
 
-            # Imprimir detalles de la venta para verificar
-            print("Venta guardada:", venta.id, venta.total, venta.tipo_documento, venta.vendedor.username)
+            # Si es una factura, crear la factura en la base de datos
+            if tipo_documento == "factura":
+                factura = Factura.objects.create(
+                    venta=venta,  # Relacionamos la factura con la venta
+                    razon_social=factura_data["razonSocial"],
+                    rut=factura_data["rut"],
+                    giro=factura_data["giro"],
+                    direccion=factura_data["direccion"],
+                    total=total  # El total de la factura puede ser el mismo que el de la venta
+                )
+                print("Factura guardada con éxito:", factura.numero)
 
-            return JsonResponse({
-                "status": "success",
-                "venta_id": venta.id,
-                "vendedor_nombre": request.user.username,
-                "fecha_venta": venta.fecha_venta.strftime("%Y-%m-%d %H:%M:%S")
-            })
+            # Responder al cliente con el ID de la venta creada
+            return JsonResponse({"status": "success", "venta_id": venta.id})
+
         except Exception as e:
-            print("Error al registrar la venta:", str(e))
+            # Si ocurre un error, devolverlo en la respuesta
+            print("Error al procesar la venta:", str(e))
             return JsonResponse({"status": "failed", "error": str(e)}, status=500)
 
+    # Si no es un POST, devolver error de método no permitido
     return JsonResponse({"status": "failed", "error": "Método no permitido"}, status=405)
+
+
 
 
 @login_required
@@ -261,30 +284,54 @@ def obtener_ventas(request):
     )
     return JsonResponse({"ventas": list(ventas)})
 
-
 @login_required
 def informe_ventas_dia(request):
-    # Obtener ventas con boleta y factura sin filtrar por fecha (por ahora)
+    # Filtrar ventas por tipo de documento
     ventas_con_boleta = Venta.objects.filter(tipo_documento="boleta")
-    ventas_con_factura = Venta.objects.filter(tipo_documento="factura")
-    
-    # Calcular cantidad de boletas y total de dinero con boleta
-    total_boletas = ventas_con_boleta.aggregate(cantidad_boletas=Count('id'), total_boletas=Sum('total'))
-    
-    # Calcular cantidad de facturas y total de dinero con factura
-    total_facturas = ventas_con_factura.aggregate(cantidad_facturas=Count('id'), total_facturas=Sum('total'))
-    
-    print("Ventas con boleta:", list(ventas_con_boleta))  # Depuración
-    print("Ventas con factura:", list(ventas_con_factura))  # Depuración
-    print("Total boletas:", total_boletas)
-    print("Total facturas:", total_facturas)
-    
-    # Responder con los datos
+    ventas_con_factura = Venta.objects.filter(tipo_documento="factura", factura__isnull=False)
+
+    # Agregar datos para boletas
+    total_boletas = ventas_con_boleta.aggregate(
+        cantidad_boletas=Count('id'),
+        total_boletas=Sum('total')
+    )
+
+    # Agregar datos para facturas
+    total_facturas = ventas_con_factura.aggregate(
+        cantidad_facturas=Count('id'),
+        total_facturas=Sum('total')
+    )
+
+    # Detalles de facturas
+    facturas_detalle = ventas_con_factura.select_related('factura').values(
+        'factura__numero',
+        'factura__razon_social',
+        'factura__rut',
+        'factura__giro',
+        'factura__direccion',
+        'total',  # Total de la venta
+        'fecha_venta'  # Fecha de la venta
+    )
+
+    facturas_list = [
+        {
+            "numero": factura['factura__numero'],
+            "razon_social": factura['factura__razon_social'],
+            "rut": factura['factura__rut'],
+            "giro": factura['factura__giro'],
+            "direccion": factura['factura__direccion'],
+            "total": factura['total'],
+            "fecha": factura['fecha_venta'].strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        for factura in facturas_detalle
+    ]
+
     return JsonResponse({
         "cantidad_boletas": total_boletas['cantidad_boletas'] or 0,
         "total_boletas": total_boletas['total_boletas'] or 0.0,
         "cantidad_facturas": total_facturas['cantidad_facturas'] or 0,
-        "total_facturas": total_facturas['total_facturas'] or 0.0
+        "total_facturas": total_facturas['total_facturas'] or 0.0,
+        "facturas": facturas_list,
     })
 
 

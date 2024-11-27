@@ -188,6 +188,7 @@ const Venta = ({ logout }) => {
   };
 
   async function guardarVenta(data) {
+    console.log("Datos enviados al backend:", data);
     const csrftoken = document.cookie
       .split("; ")
       .find((row) => row.startsWith("csrftoken"))
@@ -215,58 +216,46 @@ const Venta = ({ logout }) => {
     }
   }
   
+  
 
 
 
 
 
 
-    const confirmarDocumento = async () => {
-      if (!tipoDocumento) {
-        alert("Por favor, selecciona un tipo de documento.");
+  const confirmarDocumento = async () => {
+    if (!tipoDocumento) {
+      alert("Por favor, selecciona un tipo de documento.");
+      return;
+    }
+  
+    if (tipoDocumento === "factura") {
+      const { razonSocial, rut, giro, direccion } = facturaData;
+      if (!razonSocial.trim() || !rut.trim() || !giro.trim() || !direccion.trim()) {
+        alert("Por favor, completa todos los campos para la factura.");
         return;
       }
-    
-      // Validación adicional para facturas
-      if (tipoDocumento === "factura") {
-        const { razonSocial, rut, giro, direccion } = facturaData;
-        if (!razonSocial.trim() || !rut.trim() || !giro.trim() || !direccion.trim()) {
-          alert("Por favor, completa todos los campos para la factura.");
-          return;
-        }
-      }
-    
-      try {
-        // Preparar los datos para el backend
-        const ventaData = {
-          carrito,
-          total: totalConIva,
-          tipoDocumento,
-          fechaVenta: new Date().toISOString(),
-          ...(tipoDocumento === "factura" ? { facturaData } : {}),
-        };
-    
-        // Guardar la venta
-        const ventaGuardada = await guardarVenta(ventaData);
-        console.log("Venta guardada con éxito:", ventaGuardada);
-    
-        // Generar PDF del documento
-        if (tipoDocumento === "factura") {
-          const facturaNumero = ventaGuardada.numeroFactura || Date.now();
-          FacturaPDF(carrito, total, facturaNumero, facturaData).generarPDF();
-        } else if (tipoDocumento === "boleta") {
-          const boletaNumero = ventaGuardada.numeroBoleta || Date.now();
-          BoletaPDF(carrito, total, boletaNumero).generarPDF();
-        }
-    
-        // Reiniciar los datos para una nueva venta
-        nuevaVenta();
-        setDialogVisible(false);
-      } catch (error) {
-        console.error("Error al guardar la venta:", error);
-        alert("Hubo un problema al registrar la venta. Inténtalo nuevamente.");
-      }
-    };
+    }
+  
+    try {
+      const ventaData = {
+        carrito,
+        total: totalConIva,
+        tipoDocumento,
+        facturaData: tipoDocumento === "factura" ? facturaData : undefined,
+      };
+  
+      const ventaGuardada = await guardarVenta(ventaData);
+      console.log("Venta guardada con éxito:", ventaGuardada);
+  
+      nuevaVenta();
+      setDialogVisible(false);
+    } catch (error) {
+      console.error("Error al guardar la venta:", error);
+      alert("Hubo un problema al registrar la venta. Inténtalo nuevamente.");
+    }
+  };
+  
 
 
 
