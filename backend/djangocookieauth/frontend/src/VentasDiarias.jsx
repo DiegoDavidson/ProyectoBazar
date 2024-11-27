@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from 'react-data-table-component';
 import './App.css'; 
 import Navbar from './Navbar';
+import { useContext } from 'react';
+import { Route } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 const CustomPagination = ({ rowsPerPage, rowCount, onChangePage, currentPage }) => {
   const totalPages = Math.ceil(rowCount / rowsPerPage);
@@ -61,14 +64,17 @@ const CustomPagination = ({ rowsPerPage, rowCount, onChangePage, currentPage }) 
   );
 };
 
-const VentasDiarias = ({ventas}) => {
+const VentasDiarias = ({ ventas }) => {
   const [sales, setSales] = useState(ventas || []);
   const [message, setMessage] = useState('');
-  const [filterType, setFilterType] = useState(''); // Estado para controlar el tipo de filtro seleccionado
+  const [filterType, setFilterType] = useState('');
+  const location = useLocation();
+  const estadoDia = location.state?.estadoDia;
 
   useEffect(() => {
-    fetchSales();
-  }, []);
+    console.log('Estado del día:', estadoDia);
+    fetchSales(); // Cargar ventas siempre, independientemente del estado del día.
+  }, [estadoDia]); // Ejecutar cada vez que cambie estadoDia.
 
   const fetchSales = async () => {
     try {
@@ -80,14 +86,17 @@ const VentasDiarias = ({ventas}) => {
       const ventasFormateadas = data.ventas.map((venta) => ({
         ...venta,
         total: parseFloat(venta.total).toFixed(2),
-        fecha_venta: new Date(venta.fecha_venta).toLocaleString('es-ES') // Formatear la fecha y hora
+        fecha_venta: new Date(venta.fecha_venta).toLocaleString('es-ES'),
       }));
+      console.log(data.ventas);
+    
       setSales(ventasFormateadas);
     } catch (err) {
       console.error('Error al obtener las ventas:', err);
       setMessage('Error al obtener las ventas');
     }
   };
+
 
   const columns = [
     { name: 'ID', selector: (row) => row.id },

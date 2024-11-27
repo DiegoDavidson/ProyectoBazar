@@ -267,6 +267,18 @@ const Venta = ({ logout }) => {
         alert("Hubo un problema al registrar la venta. Inténtalo nuevamente.");
       }
     };
+
+
+
+  // Eliminar un producto del carrito
+  const eliminarDelCarrito = (id) => {
+    const nuevoCarrito = carrito.filter((item) => item.id !== id);
+    setCarrito(nuevoCarrito);
+
+    const nuevoTotal = nuevoCarrito.reduce((acc, item) => acc + item.subtotal, 0);
+    setTotal(nuevoTotal);
+  };
+
     
   
   
@@ -378,59 +390,81 @@ const Venta = ({ logout }) => {
     }}
   >
     <h2 style={{ marginBottom: "10px", color: "#FFFFFF" }}>Ticket de Compra</h2>
-    <div
-      style={{
-        flex: 1,
-        width: "100%",
-        overflowY: "auto",
-        marginBottom: "10px",
-        padding: "10px",
-        backgroundColor: "#13242C",
-        borderRadius: "5px",
-      }}
-    >
-      <ul style={{ listStyleType: "none", padding: "0", margin: "0" }}>
-        {carrito.map((item) => (
-          <li key={item.id} style={{ marginBottom: "10px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>{item.nombre}</span>
-              <span>
-                {item.cantidadSeleccionada} x ${item.valor_unitario} = $
-                {item.subtotal}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-    <div
-      style={{
-        width: "100%",
-        padding: "10px",
-        backgroundColor: "#0F1E25",
-        borderRadius: "5px",
-      }}
-    >
-      <p style={{ margin: "5px 0" }}>Total antes de IVA: ${total.toFixed(2)}</p>
-      <p style={{ margin: "5px 0" }}>IVA (19%): ${iva.toFixed(2)}</p>
-      <p style={{ margin: "5px 0", fontWeight: "bold" }}>
-        Total: ${totalConIva.toFixed(2)}
-      </p>
-    </div>
-    <button
-      onClick={finalizarCompra}
-      style={{
-        marginTop: "10px",
-        backgroundColor: "#007bff",
-        color: "#fff",
-        padding: "10px",
-        borderRadius: "5px",
-        cursor: "pointer",
-        border: "none",
-      }}
-    >
-      Finalizar Compra
-    </button>
+<div
+  style={{
+    flex: 1,
+    width: "100%",
+    overflowY: "auto",
+    marginBottom: "10px",
+    padding: "10px",
+    backgroundColor: "#13242C",
+    borderRadius: "5px",
+  }}
+>
+  <ul style={{ listStyleType: "none", padding: "0", margin: "0" }}>
+    {carrito.map((item) => (
+      <li key={item.id} style={{ marginBottom: "10px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span>{item.nombre}</span>
+          <span>
+            {item.cantidadSeleccionada} x ${item.valor_unitario} = $
+            {item.subtotal}
+          </span>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button
+              onClick={() => eliminarDelCarrito(item.id)}
+              style={{
+                backgroundColor: "#dc3545",
+                color: "#fff",
+                padding: "5px 10px",
+                borderRadius: "5px",
+                cursor: "pointer",
+                border: "none",
+              }}
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </li>
+    ))}
+  </ul>
+</div>
+<div
+  style={{
+    width: "100%",
+    padding: "10px",
+    backgroundColor: "#0F1E25",
+    borderRadius: "5px",
+  }}
+>
+  <p style={{ margin: "5px 0" }}>Total antes de IVA: ${total.toFixed(2)}</p>
+  <p style={{ margin: "5px 0" }}>IVA (19%): ${iva.toFixed(2)}</p>
+  <p style={{ margin: "5px 0", fontWeight: "bold" }}>
+    Total: ${totalConIva.toFixed(2)}
+  </p>
+</div>
+<button
+  onClick={finalizarCompra}
+  style={{
+    marginTop: "10px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    padding: "10px",
+    borderRadius: "5px",
+    cursor: "pointer",
+    border: "none",
+  }}
+>
+  Finalizar Compra
+</button>
+
   </div>
 </div> {/* Cierre del div principal */}
 

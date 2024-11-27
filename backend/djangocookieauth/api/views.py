@@ -17,6 +17,8 @@ from .models import Venta
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db.models import Sum, Count
+from django.db import transaction
+from datetime import date
 
 @csrf_exempt
 def login_view(request):
@@ -81,16 +83,33 @@ def cambiar_estado_ventas(request):
         
         if estado_actual.abierto:
             # Si el día está abierto, cerrarlo
-            estado_actual.abierto = False
-            estado_actual.inicio_dia = None  # Reinicia el tiempo de inicio
-            estado_actual.save()
-            return JsonResponse({"estado": "cerrado", "inicio_dia": None})
+            with transaction.atomic():
+                estado_actual.abierto = False
+                estado_actual.inicio_dia = None  # Reinicia el tiempo de inicio
+                estado_actual.save()
+
+                # Reiniciar ventas del día actual
+                Venta.objects.filter(fecha_venta__date=date.today()).delete()
+
+            return JsonResponse({
+                "estado": "cerrado", 
+                "inicio_dia": None, 
+                "mensaje": "El día de ventas se ha cerrado y las ventas del día se han reiniciado."
+            })
         else:
             # Si el día está cerrado, abrirlo
-            estado_actual.abierto = True
-            estado_actual.inicio_dia = now()  # Registra la hora de inicio
-            estado_actual.save()
-            return JsonResponse({"estado": "abierto", "inicio_dia": estado_actual.inicio_dia})
+            with transaction.atomic():
+                # Eliminar las ventas anteriores
+                Venta.objects.all().delete()  # Elimina todas las ventas
+                estado_actual.abierto = True
+                estado_actual.inicio_dia = now()  # Registra la hora de inicio
+                estado_actual.save()
+
+            return JsonResponse({
+                "estado": "abierto", 
+                "inicio_dia": estado_actual.inicio_dia, 
+                "mensaje": "El día de ventas se ha abierto y las ventas anteriores se han eliminado."
+            })
 
     return JsonResponse({"detail": "Método no permitido"}, status=405)
 

@@ -56,26 +56,26 @@ const handleConfirmarEstado = async () => {
   setDialogVisible(false);
 
   try {
-    const response = await fetch ("/api/cambiar_estado_ventas", {
+    const response = await fetch("/api/cambiar_estado_ventas", {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok) {
-      throw new Error ("Eerror al cambiar el estado del día")
+      throw new Error("Error al cambiar el estado del día");
     }
 
     const data = await response.json();
-    if (data && data.estado){
+    if (data && data.estado) {
       setEstadoDia(data.estado === "abierto");
       setInicioDia(data.inicio_dia || null);
-      alert(data.mensaje);
+      alert(data.mensaje); // Muestra el mensaje recibido
     }
-    
   } catch (error) {
     console.error("Error al cambiar el estado del día:", error);
   }
 };
+
 
 return (
   <div style={{ display: 'flex', backgroundColor: '#0F1E25', minHeight: '100vh' }}>
@@ -122,7 +122,7 @@ return (
           Gestionar Inventario
         </button>
         <button
-          onClick={() => navigate('/ventasdiarias')}
+          onClick={() => navigate('/ventasdiarias', { state: { estadoDia } })}
           style={buttonStyle}
         >
           Ver Ventas Diarias
