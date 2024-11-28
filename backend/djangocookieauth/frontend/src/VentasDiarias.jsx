@@ -3,9 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import DataTable from 'react-data-table-component';
 import './App.css'; 
 import Navbar from './Navbar';
+import { Spinner } from 'react-bootstrap'; // Importar Spinner
 import { useContext } from 'react';
 import { Route } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
+import folder from "./Components/assets/folder.png";
+import refresh from "./Components/assets/refresh.png";
 
 const CustomPagination = ({ rowsPerPage, rowCount, onChangePage, currentPage }) => {
   const totalPages = Math.ceil(rowCount / rowsPerPage);
@@ -68,6 +71,7 @@ const VentasDiarias = ({ ventas }) => {
   const [sales, setSales] = useState(ventas || []);
   const [message, setMessage] = useState('');
   const [filterType, setFilterType] = useState('');
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
   const estadoDia = location.state?.estadoDia;
 
@@ -88,12 +92,13 @@ const VentasDiarias = ({ ventas }) => {
         total: parseFloat(venta.total).toFixed(2),
         fecha_venta: new Date(venta.fecha_venta).toLocaleString('es-ES'),
       }));
-      console.log(data.ventas);
-    
       setSales(ventasFormateadas);
+
     } catch (err) {
       console.error('Error al obtener las ventas:', err);
       setMessage('Error al obtener las ventas');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -179,7 +184,7 @@ const VentasDiarias = ({ ventas }) => {
           {message && <div className="alert alert-info mt-3">{message}</div>}
 
           {/* Filtro permanente */}
-          <div style={{ marginBottom: '20px', backgroundColor: '#13242C', padding: '10px', borderRadius: '5px' }}>
+          <div style={{ marginBottom: '20px', backgroundColor: '#13242C', padding: '10px', borderRadius: '5px', position:'relative' }}>
             <label style={{ color: '#FFFFFF', marginRight: '10px' }}>Tipo de Documento:</label>
             <select
               value={filterType}
@@ -198,8 +203,45 @@ const VentasDiarias = ({ ventas }) => {
               <option value="boleta">Boleta</option>
               <option value="factura">Factura</option>
             </select>
+
+            <img
+              src={refresh}
+              alt="Refresh"
+              onClick={() => {
+                setLoading(true);
+                setFilterType('');
+                fetchSales();
+              }}
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%', 
+                transform: 'translateY(-50%)', 
+                width: '20px',
+                height: '20px',
+                cursor: 'pointer', 
+              }}
+            />
+
+
           </div>
 
+
+
+          {loading ? ( 
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+            <Spinner animation="border" variant="light" />
+          </div>
+        ) : filteredSales.length === 0 ? (
+          <div style={{ textAlign: 'center', marginTop: '50px' }}>
+            <img
+              src={folder}  // Usando la imagen importada
+              alt="No hay ventas"
+              style={{ width: '100px', height: '100px', marginBottom: '20px' }} // Ajusta el tamaño según lo necesites
+            />
+            <h2 style={{ color: 'white' }}>No se han emitido boletas o facturas</h2>
+          </div>
+        ) : (
           <DataTable
             columns={columns}
             data={filteredSales} // Mostrar solo las ventas filtradas
@@ -210,7 +252,8 @@ const VentasDiarias = ({ ventas }) => {
             paginationComponent={(paginationProps) => <CustomPagination {...paginationProps} />} // Pasa correctamente las props a CustomPagination
             responsive
             striped
-            />
+          />
+        )}
 
         </div>
       </div>

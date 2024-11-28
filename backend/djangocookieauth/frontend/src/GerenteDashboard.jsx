@@ -69,7 +69,6 @@ const handleConfirmarEstado = async () => {
     if (data && data.estado) {
       setEstadoDia(data.estado === "abierto");
       setInicioDia(data.inicio_dia || null);
-      alert(data.mensaje); // Muestra el mensaje recibido
     }
   } catch (error) {
     console.error("Error al cambiar el estado del día:", error);

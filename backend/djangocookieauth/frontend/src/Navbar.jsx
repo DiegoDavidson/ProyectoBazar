@@ -10,29 +10,26 @@ import DialogoCierre from './DialogoCierre'; // Importamos el nuevo componente
 
 const Navbar = ({ logout }) => {
   const navigate = useNavigate();
-  const [dialogVisible, setDialogVisible] = useState(false); // Estado para controlar la visibilidad del diálogo
+  const [dialogVisible, setDialogVisible] = useState(false); 
 
-  // Función para mostrar el diálogo
   const handleCerrarSesion = () => {
-    setDialogVisible(true); // Muestra el cuadro de confirmación
+    setDialogVisible(true); 
   };
 
-  // Función para cerrar sesión después de la confirmación
+
   const handleConfirmarCerrarSesion = async () => {
-    setDialogVisible(false); // Cierra el cuadro de confirmación
+    setDialogVisible(false); 
     try {
       await logout();
-      alert("Sesión cerrada exitosamente.");
       navigate('/login');
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
-      alert("Error al cerrar sesión. Intenta nuevamente.");
     }
   };
 
-  // Función para cancelar el cierre de sesión
+
   const handleCancelarCerrarSesion = () => {
-    setDialogVisible(false); // Cierra el cuadro de confirmación
+    setDialogVisible(false); 
   };
 
   return (
@@ -98,7 +95,7 @@ const Navbar = ({ logout }) => {
         </li>
       </ul>
 
-      {/* Cuadro de confirmación de cierre de sesión */}
+
       <DialogoCierre
         visible={dialogVisible}
         onConfirmar={handleConfirmarCerrarSesion}

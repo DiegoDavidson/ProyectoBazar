@@ -3,14 +3,16 @@ import { useNavigate } from "react-router-dom";
 import DataTable from "react-data-table-component";
 import monitoIcon from "./Components/assets/Monito.png";
 import "./App.css";
-import BoletaPDF from './BoletaPDF'; // Asegúrate de que la ruta sea correcta
+import BoletaPDF from './BoletaPDF'; 
 import FacturaPDF from './FacturaPDF';
+import InventarioIcon from "./Components/assets/Inventory.png";
 
 
 
 
 const Venta = ({ logout }) => {
   const [productos, setProductos] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [carrito, setCarrito] = useState([]);
   const [total, setTotal] = useState(0);
   const [searchText, setSearchText] = useState("");
@@ -20,6 +22,7 @@ const Venta = ({ logout }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    setLoading(true);
     fetch("/api/listar-productos/")
       .then((res) => res.json())
       .then((data) => {
@@ -33,6 +36,7 @@ const Venta = ({ logout }) => {
         setProductos(productosFormateados);
       })
       .catch((err) => console.error("Error al obtener productos:", err));
+      setLoading(false);
   }, []);
 
   const toggleMenu = () => setMenuVisible(!menuVisible);
@@ -184,7 +188,7 @@ const Venta = ({ logout }) => {
   const totalConIva = total + iva;
 
   const finalizarCompra = () => {
-    setDialogVisible(true); // Mostrar cuadro de diálogo para seleccionar documento
+    setDialogVisible(true); 
   };
 
   async function guardarVenta(data) {
@@ -215,12 +219,6 @@ const Venta = ({ logout }) => {
       throw error;
     }
   }
-  
-  
-
-
-
-
 
 
   const confirmarDocumento = async () => {
@@ -247,6 +245,14 @@ const Venta = ({ logout }) => {
   
       const ventaGuardada = await guardarVenta(ventaData);
       console.log("Venta guardada con éxito:", ventaGuardada);
+
+      if (tipoDocumento === "factura") {
+        const facturaNumero = ventaGuardada.numeroFactura || Date.now();
+        FacturaPDF(carrito, total, facturaNumero, facturaData).generarPDF();
+      } else if (tipoDocumento === "boleta") {
+        const boletaNumero = ventaGuardada.numeroBoleta || Date.now();
+        BoletaPDF(carrito, total, boletaNumero).generarPDF();
+      }
   
       nuevaVenta();
       setDialogVisible(false);
@@ -257,7 +263,24 @@ const Venta = ({ logout }) => {
   };
   
 
-
+  const actualizarProductos = () => {
+    setLoading(true); // Muestra un indicador de carga mientras se actualizan los datos
+    fetch("/api/listar-productos/")
+      .then((res) => res.json())
+      .then((data) => {
+        const productosFormateados = data.map((prod) => ({
+          id: prod.codigo,
+          nombre: prod.nombre,
+          cantidad: prod.cantidad,
+          valor_unitario: prod.valor_unitario,
+          cantidadSeleccionada: 1,
+        }));
+        setProductos(productosFormateados);
+      })
+      .catch((err) => console.error("Error al actualizar productos:", err))
+      .finally(() => setLoading(false)); // Oculta el indicador de carga
+  };
+  
 
   // Eliminar un producto del carrito
   const eliminarDelCarrito = (id) => {
@@ -320,6 +343,13 @@ const Venta = ({ logout }) => {
                 style={{ padding: "10px 0", borderBottom: "1px solid #ccc", cursor: "pointer" }}>
                   Nueva venta
                 </li>
+
+                <li 
+                onClick={actualizarProductos}
+                style={{ padding: "10px 0", borderBottom: "1px solid #ccc", cursor: "pointer" }}>
+                  Actualizar
+                </li>
+
                 <li
                   onClick={handleLogout}
                   style={{
@@ -353,15 +383,49 @@ const Venta = ({ logout }) => {
         width: "100%",
       }}
     />
-    <DataTable
-      columns={columnas}
-      data={productos.filter((producto) =>
-        producto.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
-        producto.id.toString().includes(searchText)
+      
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "200px" }}>
+          <div className="spinner-border text-light" role="status">
+            <span className="visually-hidden">Cargando ...</span>
+          </div>
+        </div>
+      ) : productos.length > 0 ? (
+        productos.filter((producto) =>
+          producto.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
+          producto.id.toString().includes(searchText)
+        ).length > 0 ? (
+          <DataTable
+            columns={columnas}
+            data={productos.filter((producto) =>
+              producto.nombre.toLowerCase().includes(searchText.toLowerCase()) ||
+              producto.id.toString().includes(searchText)
+            )}
+            customStyles={customStyles}
+            pagination
+          />
+        ) : (
+          <div className="text-center" style={{ marginTop: "50px", color: "white" }}>
+          <img
+            src={InventarioIcon}
+            alt="Sin productos"
+            style={{ width: "150px", marginBottom: "20px" }}
+          />
+          <h2>No se ha encontrado producto</h2>
+        </div>
+        )
+      ) : (
+        <div className="text-center" style={{ marginTop: "50px", color: "white" }}>
+          <img
+            src={InventarioIcon}
+            alt="Sin productos"
+            style={{ width: "150px", marginBottom: "20px" }}
+          />
+          <h2>No hay productos en el inventario</h2>
+        </div>
       )}
-      customStyles={customStyles}
-      pagination
-    />
+
+
   </div>
 
   {/* Cuadro lateral */}

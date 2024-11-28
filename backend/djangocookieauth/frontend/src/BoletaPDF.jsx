@@ -3,86 +3,112 @@ import monitosLogo from "./Components/assets/MonitosDeLaNona.png"; // Ajusta la 
 
 const BoletaPDF = (carrito, total, boletaNumero) => {
   const generarPDF = () => {
-    const doc = new jsPDF();
+    // Crear un documento con una página más larga (por ejemplo, 500 mm de alto)
+    const doc = new jsPDF({
+      unit: 'mm', // Definir unidades como milímetros
+      format: [210, 500] // A4 de ancho (210 mm) y altura extendida (500 mm)
+    });
 
-    // Cargar imagen
-    const imgWidth = 50; // Ancho deseado de la imagen
-    const imgHeight = 60; // Altura deseada de la imagen
+    // Configuración inicial
+    const imgWidth = 50;
+    const imgHeight = 60;
     const pageWidth = doc.internal.pageSize.getWidth();
-    const centerX = (pageWidth - imgWidth) / 2; // Posición X para centrar
-
-    doc.addImage(monitosLogo, "PNG", centerX, 10, imgWidth, imgHeight);
-
-    // Primera sección (RUT, BOLETA, NUMERO)
-    doc.setFontSize(12);
-    doc.text("RUT: 20.760.036-9", pageWidth / 2, 90, { align: "center" });
-    doc.text("BOLETA ELECTRÓNICA", pageWidth / 2, 100, { align: "center" });
-    doc.text(`N° BOLETA: ${boletaNumero}`, pageWidth / 2, 110, { align: "center" });
-
-    // Línea de separación
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const centerX = (pageWidth - imgWidth) / 2;
     const lineX = 20;
     const lineWidth = pageWidth - 40;
-    doc.setLineWidth(0.5);
-    doc.line(lineX, 115, lineX + lineWidth, 115);
 
-    // Fecha y hora de emisión
+    let yPosition = 10;
+
+    // Función para manejar desbordamientos (evitar saltos de página)
+    const checkPageOverflow = (increment = 10) => {
+      if (yPosition + increment > pageHeight - 20) {
+        // Si se excede el tamaño de la página extendida, ajustamos la posición sin hacer un salto de página
+        yPosition += increment;
+      }
+    };
+
+    // Encabezado
+    doc.addImage(monitosLogo, "PNG", centerX, yPosition, imgWidth, imgHeight);
+    yPosition += imgHeight + 10;
+
+    doc.setFontSize(12);
+    doc.text("RUT: 20.760.036-9", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 10;
+    doc.text("BOLETA ELECTRÓNICA", pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 10;
+    doc.text(`N° BOLETA: ${boletaNumero}`, pageWidth / 2, yPosition, { align: "center" });
+    yPosition += 15;
+
+    // Línea de separación
+    checkPageOverflow();
+    doc.setLineWidth(0.5);
+    doc.line(lineX, yPosition, lineX + lineWidth, yPosition);
+    yPosition += 10;
+
+    // Fecha, hora y sucursal
     const now = new Date();
     const fecha = now.toLocaleDateString();
     const hora = now.toLocaleTimeString();
     doc.setFontSize(10);
-    doc.text(`FECHA EMISIÓN: ${fecha}`, 20, 125);
-    doc.text(`HORA: ${hora}`, pageWidth - 20, 125, { align: "right" });
+    doc.text(`FECHA EMISIÓN: ${fecha}`, 20, yPosition);
+    doc.text(`HORA: ${hora}`, pageWidth - 20, yPosition, { align: "right" });
+    yPosition += 10;
 
-    doc.text("SUCURSAL: CALLE FALSA #1234, LONGAVÍ", 20, 135);
+    doc.text("SUCURSAL: CALLE FALSA #1234, LONGAVÍ", 20, yPosition);
+    yPosition += 10;
 
     // Línea de separación
-    const sucursalLineY = 140;
-    doc.setLineWidth(0.5);
-    doc.line(lineX, sucursalLineY, lineX + lineWidth, sucursalLineY);
+    checkPageOverflow();
+    doc.line(lineX, yPosition, lineX + lineWidth, yPosition);
+    yPosition += 10;
 
-    // Agregar lista de productos
-    let yPosition = 145;
+    // Lista de productos
+    doc.setFontSize(10);
     doc.text("DESCRIPCIÓN:", 20, yPosition);
     yPosition += 10;
 
-    const rightAlignX = pageWidth - 20; //alineación derecha
-
     carrito.forEach((producto) => {
-      // Primera línea: Nombre producto, x UNIDAD, precio por unidad
       const precioUnidad = producto.subtotal / producto.cantidadSeleccionada;
+
+      // Primera línea: Nombre producto, x UNIDAD, precio por unidad
+      checkPageOverflow(10);
       doc.text(`${producto.nombre} x UNIDAD`, 20, yPosition);
-      doc.text(`$${precioUnidad.toFixed(2)}`, rightAlignX, yPosition, { align: "right" });
+      doc.text(`$${precioUnidad.toFixed(2)}`, pageWidth - 20, yPosition, { align: "right" });
       yPosition += 10;
 
       // Segunda línea: x cantidad, total del producto
+      checkPageOverflow(10);
       doc.text(`x ${producto.cantidadSeleccionada}`, 20, yPosition);
-      doc.text(`$${producto.subtotal.toFixed(2)}`, rightAlignX, yPosition, { align: "right" });
+      doc.text(`$${producto.subtotal.toFixed(2)}`, pageWidth - 20, yPosition, { align: "right" });
       yPosition += 10;
     });
 
     // Línea de separación
-    yPosition += 5;
+    checkPageOverflow(10);
     doc.setLineWidth(0.5);
     doc.line(lineX, yPosition, lineX + lineWidth, yPosition);
-    yPosition += 5;
+    yPosition += 10;
 
-    // Total e IVA
+    // Totales
     const iva = total * 0.19;
     const totalConIva = total + iva;
 
-    const leftAlignX = 20; // alineados a la izquierda
-
-    doc.text("SUBTOTAL:", leftAlignX, yPosition);
-    doc.text(`$${total.toFixed(2)}`, rightAlignX, yPosition, { align: "right" });
+    checkPageOverflow(10);
+    doc.text("SUBTOTAL:", 20, yPosition);
+    doc.text(`$${total.toFixed(2)}`, pageWidth - 20, yPosition, { align: "right" });
     yPosition += 10;
 
-    doc.text("IVA (19%):", leftAlignX, yPosition);
-    doc.text(`$${iva.toFixed(2)}`, rightAlignX, yPosition, { align: "right" });
+    checkPageOverflow(10);
+    doc.text("IVA (19%):", 20, yPosition);
+    doc.text(`$${iva.toFixed(2)}`, pageWidth - 20, yPosition, { align: "right" });
     yPosition += 10;
 
-    doc.text("TOTAL:", leftAlignX, yPosition);
-    doc.text(`$${totalConIva.toFixed(2)}`, rightAlignX, yPosition, { align: "right" });
+    checkPageOverflow(10);
+    doc.text("TOTAL:", 20, yPosition);
+    doc.text(`$${totalConIva.toFixed(2)}`, pageWidth - 20, yPosition, { align: "right" });
 
+    // Descargar PDF
     doc.save(`Boleta_${boletaNumero}.pdf`);
   };
 
