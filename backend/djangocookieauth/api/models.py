@@ -35,8 +35,6 @@ class EstadoDiaVentas(models.Model):
 
     def __str__(self):
          return "Abierto" if self.abierto else "Cerrado"
-    
-from django.db import models
 
 class Venta(models.Model):
     vendedor = models.ForeignKey('auth.User', on_delete=models.CASCADE)
@@ -59,5 +57,16 @@ class Factura(models.Model):
 
     def __str__(self):
         return f"Factura {self.numero} - {self.razon_social} ({self.rut})"
+    
+
+class DetalleVenta(models.Model):
+    venta = models.ForeignKey('Venta', related_name='detalles', on_delete=models.CASCADE)
+    producto = models.CharField(max_length=255)  # Nombre del producto
+    cantidad = models.PositiveIntegerField()  # Cantidad vendida
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)  # Precio por unidad
+
+    def __str__(self):
+        return f"{self.cantidad}x {self.producto} (Venta {self.venta.id})"
+
 
 

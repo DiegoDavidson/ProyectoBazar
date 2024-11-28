@@ -237,7 +237,11 @@ const Venta = ({ logout }) => {
   
     try {
       const ventaData = {
-        carrito,
+        carrito: carrito.map(item => ({
+          nombre: item.nombre,
+          cantidadSeleccionada: item.cantidadSeleccionada,
+          valor_unitario: item.valor_unitario
+        })),
         total: totalConIva,
         tipoDocumento,
         facturaData: tipoDocumento === "factura" ? facturaData : undefined,
@@ -245,15 +249,16 @@ const Venta = ({ logout }) => {
   
       const ventaGuardada = await guardarVenta(ventaData);
       console.log("Venta guardada con éxito:", ventaGuardada);
-
+  
       if (tipoDocumento === "factura") {
         const facturaNumero = ventaGuardada.numeroFactura || Date.now();
-        FacturaPDF(carrito, total, facturaNumero, facturaData).generarPDF();
+        FacturaPDF(carrito, totalConIva, facturaNumero, facturaData).generarPDF();
       } else if (tipoDocumento === "boleta") {
         const boletaNumero = ventaGuardada.numeroBoleta || Date.now();
-        BoletaPDF(carrito, total, boletaNumero).generarPDF();
+        BoletaPDF(carrito, totalConIva, boletaNumero).generarPDF();
       }
-  
+
+      console.log("Datos a enviar al backend:", ventaData);
       nuevaVenta();
       setDialogVisible(false);
     } catch (error) {

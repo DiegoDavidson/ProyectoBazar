@@ -67,13 +67,20 @@ const handleConfirmarEstado = async () => {
 
     const data = await response.json();
     if (data && data.estado) {
-      setEstadoDia(data.estado === "abierto");
+      const nuevoEstado = data.estado === "abierto";
+      setEstadoDia(nuevoEstado);
       setInicioDia(data.inicio_dia || null);
+
+      // Si el estado cambia a cerrado, redirigir inmediatamente al informe
+      if (!nuevoEstado) {
+        navigate("/InformeVentas");
+      }
     }
   } catch (error) {
     console.error("Error al cambiar el estado del día:", error);
   }
 };
+
 
 
 return (

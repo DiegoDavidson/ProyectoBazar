@@ -19,6 +19,7 @@ from django.utils.timezone import now
 from django.db.models import Sum, Count
 from django.db import transaction
 from datetime import date
+from .models import Venta, DetalleVenta, Factura
 
 @csrf_exempt
 def login_view(request):
@@ -211,78 +212,86 @@ def editar_producto(request, id):
         print("Método no permitido")
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
+from django.db import transaction
+
 @csrf_exempt
 @login_required
 def registrar_venta(request):
     if request.method == "POST":
-        print("Iniciando el método registrar_venta")
         try:
-            # Cargar los datos enviados por el cliente
             data = json.loads(request.body)
-            print("Datos completos recibidos:", data)
-
-            # Extraer los valores del tipo de documento y total
             tipo_documento = data.get("tipoDocumento")
-            print("Tipo de documento recibido:", tipo_documento)
-
             total = data.get("total")
             factura_data = data.get("facturaData", {})
+            carrito = data.get("carrito", [])
 
-            # Procesamiento especial si es una factura
-            if tipo_documento == "factura":
-                print("Procesando una factura")
-                required_fields = ["razonSocial", "rut", "giro", "direccion"]
-                if not all(factura_data.get(field, "").strip() for field in required_fields):
-                    print("Faltan datos obligatorios en la factura:", factura_data)
-                    return JsonResponse({"status": "failed", "error": "Faltan datos de la factura"}, status=400)
+            # Verificar que el carrito no esté vacío
+            if not carrito:
+                return JsonResponse({"status": "failed", "error": "El carrito está vacío"}, status=400)
 
-                # Imprimir los datos de la factura para depuración
-                print("Datos de la factura:")
-                print(f"Razón Social: {factura_data.get('razonSocial')}")
-                print(f"RUT: {factura_data.get('rut')}")
-                print(f"Giro: {factura_data.get('giro')}")
-                print(f"Dirección: {factura_data.get('direccion')}")
-
-            # Crear la venta en la base de datos
-            venta = Venta.objects.create(
-                vendedor=request.user,  # Se asume que el vendedor es el usuario autenticado
-                total=total,
-                tipo_documento=tipo_documento
-            )
-            print("Venta guardada con éxito:", venta.id)
-
-            # Si es una factura, crear la factura en la base de datos
-            if tipo_documento == "factura":
-                factura = Factura.objects.create(
-                    venta=venta,  # Relacionamos la factura con la venta
-                    razon_social=factura_data["razonSocial"],
-                    rut=factura_data["rut"],
-                    giro=factura_data["giro"],
-                    direccion=factura_data["direccion"],
-                    total=total  # El total de la factura puede ser el mismo que el de la venta
+            with transaction.atomic():
+                # Crear la venta
+                venta = Venta.objects.create(
+                    vendedor=request.user,
+                    total=total,
+                    tipo_documento=tipo_documento
                 )
-                print("Factura guardada con éxito:", factura.numero)
 
-            # Responder al cliente con el ID de la venta creada
+                # Agregar detalles de los productos
+                for item in carrito:
+                    DetalleVenta.objects.create(
+                        venta=venta,
+                        producto=item['nombre'],
+                        cantidad=item['cantidadSeleccionada'],
+                        precio_unitario=item['valor_unitario']
+                    )
+
+                # Si es factura, crea la factura relacionada
+                if tipo_documento == "factura":
+                    Factura.objects.create(
+                        venta=venta,
+                        razon_social=factura_data["razonSocial"],
+                        rut=factura_data["rut"],
+                        giro=factura_data["giro"],
+                        direccion=factura_data["direccion"],
+                        total=total
+                    )
+
             return JsonResponse({"status": "success", "venta_id": venta.id})
 
         except Exception as e:
-            # Si ocurre un error, devolverlo en la respuesta
-            print("Error al procesar la venta:", str(e))
             return JsonResponse({"status": "failed", "error": str(e)}, status=500)
-
-    # Si no es un POST, devolver error de método no permitido
     return JsonResponse({"status": "failed", "error": "Método no permitido"}, status=405)
+
 
 
 
 
 @login_required
 def obtener_ventas(request):
-    ventas = Venta.objects.values(
-        'id', 'total', 'tipo_documento', 'fecha_venta', 'vendedor__username'
-    )
-    return JsonResponse({"ventas": list(ventas)})
+    try:
+        # Recuperar las ventas y sus detalles asociados
+        ventas = Venta.objects.prefetch_related('detalleventa_set').values(
+            'id', 
+            'total', 
+            'tipo_documento', 
+            'fecha_venta', 
+            'vendedor__username'
+        )
+
+        # Formatear los datos para incluir detalles de productos
+        ventas_con_detalles = []
+        for venta in ventas:
+            detalles = DetalleVenta.objects.filter(venta_id=venta['id']).values(
+                'producto', 'cantidad', 'precio_unitario'
+            )
+            venta['detalles'] = list(detalles)
+            ventas_con_detalles.append(venta)
+
+        return JsonResponse({"ventas": ventas_con_detalles})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
 
 @login_required
 def informe_ventas_dia(request):

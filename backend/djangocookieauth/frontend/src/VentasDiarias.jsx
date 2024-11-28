@@ -9,6 +9,7 @@ import { Route } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 import folder from "./Components/assets/folder.png";
 import refresh from "./Components/assets/refresh.png";
+import VentasDiariasPDF from "./VentasDiariasPDF";
 
 const CustomPagination = ({ rowsPerPage, rowCount, onChangePage, currentPage }) => {
   const totalPages = Math.ceil(rowCount / rowsPerPage);
@@ -75,6 +76,13 @@ const VentasDiarias = ({ ventas }) => {
   const location = useLocation();
   const estadoDia = location.state?.estadoDia;
 
+
+  const handleDownloadPDF = () => {
+    console.log("Ventas cargadas en sales para PDF:", sales); // Verificar estructura
+    const pdfGenerator = VentasDiariasPDF({ ventas: sales });
+    pdfGenerator.generarPDF();
+  };
+
   useEffect(() => {
     console.log('Estado del día:', estadoDia);
     fetchSales(); // Cargar ventas siempre, independientemente del estado del día.
@@ -83,24 +91,25 @@ const VentasDiarias = ({ ventas }) => {
   const fetchSales = async () => {
     try {
       const res = await fetch('http://localhost:8000/api/obtener_ventas/', { credentials: 'include' });
-      if (!res.ok) {
-        throw new Error('Error al obtener las ventas');
-      }
+      if (!res.ok) throw new Error('Error al obtener las ventas');
+  
       const data = await res.json();
+      console.log("Ventas con detalles obtenidas desde la API:", data);
+  
       const ventasFormateadas = data.ventas.map((venta) => ({
         ...venta,
         total: parseFloat(venta.total).toFixed(2),
         fecha_venta: new Date(venta.fecha_venta).toLocaleString('es-ES'),
       }));
+  
       setSales(ventasFormateadas);
-
     } catch (err) {
-      console.error('Error al obtener las ventas:', err);
-      setMessage('Error al obtener las ventas');
+      console.error("Error al obtener ventas:", err);
     } finally {
       setLoading(false);
     }
   };
+  
 
 
   const columns = [
@@ -181,6 +190,8 @@ const VentasDiarias = ({ ventas }) => {
         <div className="container-fluid">
           <h2 className="mb-4 mt-5 text-light">Ventas del Día</h2>
 
+
+
           {message && <div className="alert alert-info mt-3">{message}</div>}
 
           {/* Filtro permanente */}
@@ -223,8 +234,15 @@ const VentasDiarias = ({ ventas }) => {
               }}
             />
 
+            
+
+            
+
 
           </div>
+          
+
+          
 
 
 
@@ -253,7 +271,24 @@ const VentasDiarias = ({ ventas }) => {
             responsive
             striped
           />
+          
         )}
+
+          <button
+            onClick={handleDownloadPDF}
+            style={{
+              marginTop: "20px",
+              backgroundColor: "#007bff",
+              color: "#fff",
+              border: "none",
+              padding: "10px 20px",
+              cursor: "pointer",
+              borderRadius: "5px",
+              marginBottom: "20px",
+            }}
+          >
+            Descargar PDF
+          </button>
 
         </div>
       </div>

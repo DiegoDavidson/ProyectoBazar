@@ -32,7 +32,7 @@ const EstadoDiaDialog = ({ visible, estadoDia, onConfirm, onCancel }) => {
         <h3 style={{ marginBottom: "20px", fontSize: "20px" }}>
           {estadoDia
             ? "¿Estás seguro de que quieres cerrar el día?"
-            : "¿Estás seguro de que quieres abrir el día?"}
+            : "¿Estás seguro de que quieres abrir el día?      (se reiniciar las ventas)"}
         </h3>
         <div style={{ display: "flex", justifyContent: "space-between", gap: "10px" }}>
           <button
